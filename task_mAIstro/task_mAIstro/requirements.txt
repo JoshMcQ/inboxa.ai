@@ -4,3 +4,19 @@ langchain-community
 langchain-openai
 trustcall
 ipython
+
+# Gmail integration dependencies
+requests
+httpx
+pydantic
+python-dotenv
+fastapi
+uvicorn
+python-multipart
+
+# Voice interface dependencies
+openai
+elevenlabs
+numpy
+sounddevice
+soundfile
