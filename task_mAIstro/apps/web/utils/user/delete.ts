@@ -1,13 +1,16 @@
-import { deleteContact as deleteLoopsContact } from "@inboxzero/loops";
-import { deleteContact as deleteResendContact } from "@inboxzero/resend";
+import { loops, resend, tinybirdAiAnalytics } from "@/utils/stub-packages";
 import prisma from "@/utils/prisma";
 import { deleteInboxZeroLabels, deleteUserLabels } from "@/utils/redis/label";
-import { deleteTinybirdAiCalls } from "@inboxzero/tinybird-ai-analytics";
 import { deletePosthogUser, trackUserDeleted } from "@/utils/posthog";
 import { captureException } from "@/utils/error";
 import { unwatchEmails } from "@/app/api/google/watch/controller";
 import { createScopedLogger } from "@/utils/logger";
 import { sleep } from "@/utils/sleep";
+
+// Destructure the stub functions
+const deleteLoopsContact = loops.deleteContact;
+const deleteResendContact = resend.deleteContact;
+const deleteTinybirdAiCalls = tinybirdAiAnalytics.deleteTinybirdAiCalls;
 
 const logger = createScopedLogger("user/delete");
 
@@ -37,7 +40,7 @@ export async function deleteUser({ userId }: { userId: string }) {
   logger.info("Deleting user resources");
 
   try {
-    deleteTinybirdAiCalls({ userId }).catch((error) => {
+    deleteTinybirdAiCalls({ userId }).catch((error: any) => {
       logger.error("Error deleting Tinybird AI calls", {
         error,
         userId,
@@ -93,7 +96,7 @@ async function deleteResources({
     deleteInboxZeroLabels({ emailAccountId }),
     deleteLoopsContact(emailAccountId),
     deletePosthogUser({ email }),
-    deleteResendContact({ email }),
+    deleteResendContact(email),
     accessToken
       ? unwatchEmails({
           emailAccountId,

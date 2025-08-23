@@ -3,9 +3,9 @@ import { Header } from "@/app/(landing)/home/Header";
 
 export function BasicLayout(props: { children: React.ReactNode }) {
   return (
-    <div className="bg-white">
+    <div className="bg-white min-h-screen">
       <Header />
-      <main className="isolate">{props.children}</main>
+      <main className="isolate pt-16">{props.children}</main>
       <Footer />
     </div>
   );

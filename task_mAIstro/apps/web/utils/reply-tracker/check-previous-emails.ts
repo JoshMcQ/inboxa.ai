@@ -101,7 +101,7 @@ export async function processPreviousSentEmails({
         });
       }
 
-      revalidatePath(prefixPath(emailAccount.id, "/reply-zero"));
+      revalidatePath(prefixPath(emailAccount.id, "/reply-manager"));
     } catch (error) {
       logger.error("Error processing message for reply tracking", {
         ...loggerOptions,

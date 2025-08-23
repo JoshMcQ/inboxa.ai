@@ -10,10 +10,11 @@ import { PageHeading, TypographyP } from "@/components/Typography";
 import { UTMs } from "@/app/(landing)/welcome/utms";
 import { SignUpEvent } from "@/app/(landing)/welcome/sign-up-event";
 import { CardBasic } from "@/components/ui/card";
+import { redirectToEmailAccountPath } from "@/utils/account";
 
 export const metadata: Metadata = {
   title: "Welcome",
-  description: "Get started with Inbox Zero",
+  description: "Get started with InboxaAI",
   alternates: { canonical: "/welcome" },
 };
 
@@ -25,7 +26,7 @@ export default async function WelcomePage(props: {
 
   if (!session?.user) redirect("/login");
   if (!env.NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID)
-    redirect(env.NEXT_PUBLIC_APP_HOME_PATH);
+    await redirectToEmailAccountPath("/setup");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -35,7 +36,7 @@ export default async function WelcomePage(props: {
   if (!user) redirect("/login");
 
   if (!searchParams.force && user.completedOnboardingAt)
-    redirect(env.NEXT_PUBLIC_APP_HOME_PATH);
+    await redirectToEmailAccountPath("/setup");
 
   const questionIndex = searchParams.question
     ? Number.parseInt(searchParams.question)
@@ -47,7 +48,7 @@ export default async function WelcomePage(props: {
 
       <CardBasic className="mx-auto flex max-w-2xl flex-col justify-center space-y-6 p-10 duration-500 animate-in fade-in">
         <div className="flex flex-col text-center">
-          <PageHeading>Welcome to Inbox Zero</PageHeading>
+          <PageHeading>Welcome to InboxaAI</PageHeading>
           <TypographyP className="mt-2">Let{"'"}s get you set up!</TypographyP>
           <div className="mt-4">
             <Suspense>

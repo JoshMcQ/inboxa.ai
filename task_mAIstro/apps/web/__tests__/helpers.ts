@@ -25,8 +25,10 @@ export function getEmail({
   return {
     id: "email-id",
     from,
+    to: "recipient@test.com",
     subject,
     content,
+    date: new Date(),
     ...(replyTo && { replyTo }),
     ...(cc && { cc }),
   };

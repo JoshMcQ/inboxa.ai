@@ -1,3 +1,7 @@
+import { loops } from "@/utils/stub-packages";
+import type { Payload } from "@/app/api/lemon-squeezy/webhook/types";
+// import { switchedPremiumPlan, startedTrial } from "@/utils/stub-packages";
+const { deleteContact: deleteLoopsContact, switchedPremiumPlan, startedTrial } = loops;
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import prisma from "@/utils/prisma";
@@ -16,10 +20,8 @@ import {
   extendPremiumLemon,
   upgradeToPremiumLemon,
 } from "@/utils/premium/server";
-import type { Payload } from "@/app/api/lemon-squeezy/webhook/types";
-import { switchedPremiumPlan, startedTrial } from "@inboxzero/loops";
 import { SafeError } from "@/utils/error";
-import { getLemonSubscriptionTier } from "@/app/(app)/premium/config";
+import { getLemonSubscriptionTier } from "@/app/app-layout/premium/config";
 import { createScopedLogger } from "@/utils/logger";
 
 const logger = createScopedLogger("Lemon Squeezy Webhook");
@@ -154,7 +156,7 @@ async function subscriptionCreated({
         payload.data.attributes.status === "on_trial"
           ? trackTrialStarted(email, payload.data.attributes)
           : trackUpgradedToPremium(email, payload.data.attributes),
-        startedTrial(email, tier),
+        startedTrial(email),
       ]);
     } catch (error) {
       logger.error("Error capturing event", {
@@ -196,7 +198,7 @@ async function subscriptionPlanChanged({
           payload.data.attributes.status,
           payload.data.attributes,
         ),
-        switchedPremiumPlan(email, tier),
+        switchedPremiumPlan(email),
       ]);
     } catch (error) {
       logger.error("Error capturing event", {

@@ -1,10 +1,10 @@
 {
-  "name": "@inbox-zero/mcp-server",
+  "name": "@inboxa/mcp-server",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "bin": {
-    "inbox-zero-ai": "./build/index.js"
+    "inboxa-ai": "./build/index.js"
   },
   "scripts": {
     "start": "node build/index.js",

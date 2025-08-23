@@ -1,10 +1,10 @@
 import type { gmail_v1 } from "@googleapis/gmail";
-import { publishArchive, type TinybirdEmailAction } from "@inboxzero/tinybird";
+import { publishArchive, type TinybirdEmailAction } from "@inboxa/tinybird";
 import {
   getRandomLabelColor,
-  inboxZeroLabels,
+  inboxaAILabels,
   PARENT_LABEL,
-  type InboxZeroLabel,
+  type InboxaAILabel,
 } from "@/utils/label";
 import {
   labelVisibility,
@@ -325,9 +325,9 @@ export async function getOrCreateInboxZeroLabel({
   key,
 }: {
   gmail: gmail_v1.Gmail;
-  key: InboxZeroLabel;
+  key: InboxaAILabel;
 }) {
-  const { name, color, messageListVisibility } = inboxZeroLabels[key];
+  const { name, color, messageListVisibility } = inboxaAILabels[key];
   const labels = await getLabels(gmail);
 
   // Create parent label if it doesn't exist

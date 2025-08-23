@@ -6,33 +6,49 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-nowrap",
+  "inline-flex items-center justify-center gap-2 rounded-[14px] px-4 h-11 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none text-nowrap transition-colors",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        green:
-          "bg-green-100 text-green-900 hover:bg-green-100/80 dark:bg-green-800 dark:text-green-50 dark:hover:bg-green-800/80",
-        red: "bg-red-100 text-red-900 hover:bg-red-100/80 dark:bg-red-800 dark:text-red-50 dark:hover:bg-red-800/80",
-        blue: "bg-blue-100 text-blue-900 hover:bg-blue-100/80 dark:bg-blue-800 dark:text-blue-50 dark:hover:bg-blue-800/80",
+        // Primary (brand indigo)
+        default:
+          "bg-[var(--brand-indigo)] text-white hover:bg-[var(--brand-indigo-hover)] focus-visible:ring-[rgba(58,71,255,0.4)]",
+        primary:
+          "bg-[var(--brand-indigo)] text-white hover:bg-[var(--brand-indigo-hover)] focus-visible:ring-[rgba(58,71,255,0.4)]",
+
+        // Backward-compat aliases mapped to Primary
         primaryBlue:
-          "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800",
+          "bg-[var(--brand-indigo)] text-white hover:bg-[var(--brand-indigo-hover)] focus-visible:ring-[rgba(58,71,255,0.4)]",
+        blue:
+          "bg-[var(--brand-indigo)] text-white hover:bg-[var(--brand-indigo-hover)] focus-visible:ring-[rgba(58,71,255,0.4)]",
+
+        // Destructive kept as-is (uses theme tokens)
+        red:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive",
+
+        // Secondary (outlined)
+        green:
+          "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-[rgba(58,71,255,0.25)]",
+        outline:
+          "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-[rgba(58,71,255,0.25)]",
+        secondary:
+          "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-[rgba(58,71,255,0.25)]",
+
+        // Ghost
+        ghost:
+          "bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:ring-[rgba(58,71,255,0.25)]",
+
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive",
+
+        link: "text-[var(--brand-indigo)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        xs: "h-6 rounded-sm px-1.5 text-xs",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10 flex-shrink-0",
-        iconSm: "h-8 w-8 flex-shrink-0",
+        sm: "h-10 px-3 text-sm",
+        md: "h-11 px-4 text-sm",       // 44px spec
+        lg: "h-12 px-5 text-base",
+        icon: "h-11 w-11 rounded-[14px]",   // 44px square with signature radius
+        iconSm: "h-10 w-10 rounded-[14px]", // 40px square with signature radius
       },
       loading: {
         true: "opacity-50 cursor-not-allowed",
@@ -40,7 +56,7 @@ const buttonVariants = cva(
     },
     defaultVariants: {
       variant: "default",
-      size: "default",
+      size: "md",
       loading: false,
     },
   },

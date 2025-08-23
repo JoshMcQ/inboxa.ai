@@ -5,9 +5,9 @@ import { CrownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasAiAccess, hasUnsubscribeAccess, isPremium } from "@/utils/premium";
 import { Tooltip } from "@/components/Tooltip";
-import { usePremiumModal } from "@/app/(app)/premium/PremiumModal";
+import { usePremiumModal } from "@/app/app-layout/premium/PremiumModal";
 import { PremiumTier } from "@prisma/client";
-import { businessTierName } from "@/app/(app)/premium/config";
+import { businessTierName } from "@/app/app-layout/premium/config";
 import { useUser } from "@/hooks/useUser";
 import { ActionCard } from "@/components/ui/card";
 

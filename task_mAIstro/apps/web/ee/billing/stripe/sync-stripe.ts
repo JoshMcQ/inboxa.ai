@@ -2,7 +2,7 @@ import sumBy from "lodash/sumBy";
 import prisma from "@/utils/prisma";
 import { createScopedLogger } from "@/utils/logger";
 import { getStripe } from "@/ee/billing/stripe";
-import { getStripeSubscriptionTier } from "@/app/(app)/premium/config";
+import { getStripeSubscriptionTier } from "@/app/app-layout/premium/config";
 import { handleLoopsEvents } from "@/ee/billing/stripe/loops-events";
 import { updateAccountSeatsForPremium } from "@/utils/premium/server";
 import type { Prisma } from "@prisma/client";

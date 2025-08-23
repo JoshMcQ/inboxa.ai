@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Hero } from "@/app/(landing)/home/Hero";
+import { HeroHome } from "@/app/(landing)/home/Hero";
 import {
   useHeroVariant,
   useHeroVariantEnabled,
@@ -17,7 +17,7 @@ const copy: {
   control: {
     title: "Meet Your AI Email Assistant That Actually Works",
     subtitle:
-      "Cut your email time in half. Inbox Zero intelligently automates responses, organizes your inbox, and helps you reach inbox zero in record time.",
+      "Cut your email time in half. InboxaAI intelligently automates responses, organizes your inbox, and helps you achieve email efficiency in record time.",
   },
   "clean-up-in-minutes": {
     title: "Clean Up Your Inbox In Minutes",
@@ -45,10 +45,10 @@ export function HeroAB() {
     setIsHydrated(true);
   }, [variant]);
 
-  if (isFlagEnabled === false) return <Hero />;
+  if (isFlagEnabled === false) return <HeroHome />;
 
   return (
-    <Hero
+    <HeroHome
       title={
         <span
           className={`transition-opacity duration-300 ease-in-out ${

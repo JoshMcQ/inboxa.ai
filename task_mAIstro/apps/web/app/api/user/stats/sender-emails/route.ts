@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import format from "date-fns/format";
-import { zodPeriod } from "@inboxzero/tinybird";
+import { tinybird } from "@/utils/stub-packages";
+const { zodPeriod } = tinybird;
 import { withEmailAccount } from "@/utils/middleware";
 import prisma from "@/utils/prisma";
 import { Prisma } from "@prisma/client";
 
 const senderEmailsQuery = z.object({
   fromEmail: z.string(),
-  period: zodPeriod,
+  period: z.enum(["day", "week", "month", "year"]),
   fromDate: z.coerce.number().nullish(),
   toDate: z.coerce.number().nullish(),
 });

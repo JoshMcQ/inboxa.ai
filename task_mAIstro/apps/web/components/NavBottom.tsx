@@ -54,12 +54,12 @@ const links = [
     icon: SparklesIcon,
   },
   {
-    path: "/bulk-unsubscribe",
+    path: "/unsubscribe",
     label: "Unsubscriber",
     icon: MailMinusIcon,
   },
   {
-    path: "/cold-email-blocker",
+    path: "/ce-blocker",
     label: "Cold Email",
     icon: ShieldHalfIcon,
   },

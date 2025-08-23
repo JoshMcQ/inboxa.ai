@@ -10,7 +10,7 @@ import {
 } from "@prisma/client";
 import { getUserCategoriesForNames } from "@/utils/category.server";
 import { getActionRiskLevel, type RiskAction } from "@/utils/risk";
-import { hasExampleParams } from "@/app/(app)/[emailAccountId]/assistant/examples";
+import { hasExampleParams } from "@/app/app-layout/[emailAccountId]/assistant/examples";
 import { SafeError } from "@/utils/error";
 import { createRuleHistory } from "@/utils/rule/rule-history";
 

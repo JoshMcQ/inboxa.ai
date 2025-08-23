@@ -6,8 +6,8 @@ import { GmailLabel } from "@/utils/gmail/label";
 import { actionClient } from "@/utils/actions/safe-action";
 import { getGmailClientForEmail } from "@/utils/account";
 
-export const whitelistInboxZeroAction = actionClient
-  .metadata({ name: "whitelistInboxZero" })
+export const whitelistInboxaAIAction = actionClient
+  .metadata({ name: "whitelistInboxaAI" })
   .action(async ({ ctx: { emailAccountId } }) => {
     if (!env.WHITELIST_FROM) return;
 

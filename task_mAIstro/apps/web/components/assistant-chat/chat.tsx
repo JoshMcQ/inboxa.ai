@@ -10,6 +10,7 @@ import {
   HistoryIcon,
   Loader2,
   PlusIcon,
+  MicIcon,
 } from "lucide-react";
 import { parseAsString, useQueryState, useQueryStates } from "nuqs";
 import { MultimodalInput } from "@/components/assistant-chat/multimodal-input";
@@ -18,7 +19,7 @@ import { EMAIL_ACCOUNT_HEADER } from "@/utils/config";
 import { ResizableHandle } from "@/components/ui/resizable";
 import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
-import { AssistantTabs } from "@/app/(app)/[emailAccountId]/assistant/AssistantTabs";
+import { AssistantTabs } from "@/app/app-layout/[emailAccountId]/assistant/AssistantTabs";
 import { ChatProvider } from "./ChatContext";
 import { SWRProvider } from "@/providers/SWRProvider";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useChats } from "@/hooks/useChats";
 import { LoadingContent } from "@/components/LoadingContent";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -36,6 +44,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExamplesDialog } from "@/components/assistant-chat/examples-dialog";
 import { Tooltip } from "@/components/Tooltip";
 import { toastError } from "@/components/Toast";
+import { VoiceCommand } from "@/components/VoiceCommand";
 
 // Some mega hacky code used here to workaround AI SDK's use of SWR
 // AI SDK uses SWR too and this messes with the global SWR config
@@ -195,6 +204,7 @@ function ChatUI({ chat }: { chat: ReturnType<typeof useChat> }) {
           <div className="flex items-center gap-1">
             <NewChatButton />
             <ExamplesDialog setInput={setInput} />
+            <VoiceCommandButton setInput={setInput} />
             <ChatHistoryDropdown />
             <OpenArtifactButton />
           </div>
@@ -258,6 +268,36 @@ function OpenArtifactButton() {
         <span className="sr-only">Open side panel</span>
       </Button>
     </Tooltip>
+  );
+}
+
+function VoiceCommandButton({ setInput }: { setInput: (input: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleVoiceResponse = (response: string) => {
+    setInput(response);
+    setIsOpen(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Tooltip content="Voice command">
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MicIcon className="size-5" />
+            <span className="sr-only">Voice Command</span>
+          </Button>
+        </DialogTrigger>
+      </Tooltip>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Voice Command</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center space-y-4 py-4">
+          <VoiceCommand onResponse={handleVoiceResponse} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

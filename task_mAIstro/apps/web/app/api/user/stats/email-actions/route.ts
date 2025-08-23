@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withEmailAccount } from "@/utils/middleware";
-import { getEmailActionsByDay } from "@inboxzero/tinybird";
+import { tinybird } from "@/utils/stub-packages";
+const { getEmailActionsByDay } = tinybird;
 
 export type EmailActionStatsResponse = Awaited<
   ReturnType<typeof getEmailActionStats>
@@ -9,7 +10,7 @@ export type EmailActionStatsResponse = Awaited<
 async function getEmailActionStats({ userEmail }: { userEmail: string }) {
   const result = (
     await getEmailActionsByDay({ ownerEmail: userEmail })
-  ).data.map((d) => ({
+  ).data.map((d: any) => ({
     date: d.date,
     Archived: d.archive_count,
     Deleted: d.delete_count,

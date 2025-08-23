@@ -1,5 +1,5 @@
 {
-  "name": "task-maistro",
+  "name": "inboxa-ai",
   "private": true,
   "scripts": {
     "build": "turbo build --filter=./apps/web",
@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@inboxzero/eslint-config": "workspace:*",
+    "@inboxa/eslint-config": "workspace:*",
     "@turbo/gen": "2.5.4",
     "eslint": "9.28.0",
     "husky": "9.1.7",
@@ -36,5 +36,8 @@
       "@types/react": "19.0.10",
       "@types/react-dom": "19.0.4"
     }
+  },
+  "dependencies": {
+    "glob": "^11.0.3"
   }
 }

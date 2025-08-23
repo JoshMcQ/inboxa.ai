@@ -199,6 +199,7 @@ function getRule(
     categoryFilterType: null,
     conditionalOperator: LogicalOperator.AND,
     systemType: null,
+    promptText: null,
   };
 }
 

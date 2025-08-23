@@ -1,4 +1,4 @@
-import { TopNav } from "@/components/TopNav";
+import { GlobalHeader } from "@/components/layouts/GlobalHeader";
 import { Toaster } from "@/components/Toast";
 import { NavBottom } from "@/components/NavBottom";
 import {
@@ -7,6 +7,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { SideNav } from "@/components/SideNav";
+import { AssistantDrawer } from "@/components/assistant/AssistantDrawer";
+import { ShortcutsModal } from "@/components/modals/ShortcutsModal";
 
 export function SideNavWithTopNav({
   children,
@@ -19,7 +21,7 @@ export function SideNavWithTopNav({
     <SidebarProvider defaultOpen={defaultOpen}>
       <SideNav />
       <SidebarInset className="overflow-hidden bg-background">
-        <TopNav trigger={<SidebarTrigger className="sm:-ml-4" />} />
+        <GlobalHeader trigger={<SidebarTrigger className="sm:-ml-4" />} />
         <Toaster closeButton richColors theme="light" visibleToasts={9} />
         {children}
         {/* space for Crisp so it doesn't cover content */}
@@ -31,6 +33,10 @@ export function SideNavWithTopNav({
           <NavBottom />
         </div>
       </SidebarInset>
+      {/* Global Assistant Drawer (collapsible right panel) */}
+      <AssistantDrawer />
+      {/* Global keyboard shortcuts modal */}
+      <ShortcutsModal />
     </SidebarProvider>
   );
 }

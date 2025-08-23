@@ -143,7 +143,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/newsletters",
-        destination: "/bulk-unsubscribe",
+        destination: "/unsubscribe",
         permanent: false,
       },
       {
@@ -153,7 +153,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/reply-tracker",
-        destination: "/reply-zero",
+        destination: "/reply-manager",
         permanent: false,
       },
       {

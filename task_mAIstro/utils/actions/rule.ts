@@ -326,7 +326,7 @@ export const updateRuleSettingsAction = actionClient
       revalidatePath(prefixPath(emailAccountId, `/assistant/rule/${id}`));
       revalidatePath(prefixPath(emailAccountId, "/assistant"));
       revalidatePath(prefixPath(emailAccountId, "/automation"));
-      revalidatePath(prefixPath(emailAccountId, "/reply-zero"));
+      revalidatePath(prefixPath(emailAccountId, "/reply-manager"));
     },
   );
 
@@ -359,7 +359,7 @@ export const enableDraftRepliesAction = actionClient
     revalidatePath(prefixPath(emailAccountId, `/assistant/rule/${rule.id}`));
     revalidatePath(prefixPath(emailAccountId, "/assistant"));
     revalidatePath(prefixPath(emailAccountId, "/automation"));
-    revalidatePath(prefixPath(emailAccountId, "/reply-zero"));
+    revalidatePath(prefixPath(emailAccountId, "/reply-manager"));
   });
 
 export const deleteRuleAction = actionClient

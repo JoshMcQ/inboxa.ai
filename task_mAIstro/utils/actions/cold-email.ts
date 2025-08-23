@@ -6,7 +6,7 @@ import { ColdEmailStatus } from "@prisma/client";
 import { getLabel, labelThread } from "@/utils/gmail/label";
 import { GmailLabel } from "@/utils/gmail/label";
 import { getThreads } from "@/utils/gmail/thread";
-import { inboxZeroLabels } from "@/utils/label";
+import { inboxaAILabels } from "@/utils/label";
 import { emailToContent } from "@/utils/mail";
 import { isColdEmail } from "@/utils/cold-email/is-cold-email";
 import {
@@ -81,7 +81,7 @@ async function removeColdEmailLabelFromSender(
 
   const label = await getLabel({
     gmail,
-    name: inboxZeroLabels.cold_email.name,
+    name: inboxaAILabels.cold_email.name,
   });
   if (!label?.id) return;
 

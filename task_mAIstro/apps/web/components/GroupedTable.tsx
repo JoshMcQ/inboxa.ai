@@ -47,7 +47,7 @@ import {
 } from "@/store/archive-sender-queue";
 import { getGmailSearchUrl, getGmailUrl } from "@/utils/url";
 import { MessageText } from "@/components/Typography";
-import { CreateCategoryDialog } from "@/app/(app)/[emailAccountId]/smart-categories/CreateCategoryButton";
+import { CreateCategoryDialog } from "@/app/app-layout/[emailAccountId]/smart-categories/CreateCategoryButton";
 import {
   DropdownMenu,
   DropdownMenuContent,

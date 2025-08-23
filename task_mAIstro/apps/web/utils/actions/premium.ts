@@ -12,14 +12,14 @@ import {
   updateAccountSeatsForPremium,
   upgradeToPremiumLemon,
 } from "@/utils/premium/server";
-import { changePremiumStatusSchema } from "@/app/(app)/admin/validation";
+import { changePremiumStatusSchema } from "@/app/app-layout/admin/validation";
 import {
   activateLemonLicenseKey,
   getLemonCustomer,
 } from "@/ee/billing/lemon/index";
 import { PremiumTier } from "@prisma/client";
 import { ONE_MONTH_MS, ONE_YEAR_MS } from "@/utils/date";
-import { getStripePriceId } from "@/app/(app)/premium/config";
+import { getStripePriceId } from "@/app/app-layout/premium/config";
 import {
   actionClientUser,
   adminActionClient,

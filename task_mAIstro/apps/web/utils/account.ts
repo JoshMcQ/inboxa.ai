@@ -90,7 +90,7 @@ export async function redirectToEmailAccountPath(path: `/${string}`) {
     notFound();
   }
 
-  const redirectUrl = `/${emailAccount.id}${path}`;
+  const redirectUrl = `/app-layout/${emailAccount.id}${path}`;
 
   redirect(redirectUrl);
 }

@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import format from "date-fns/format";
 import { z } from "zod";
 import sumBy from "lodash/sumBy";
-import { zodPeriod } from "@inboxzero/tinybird";
+import { tinybird } from "@/utils/stub-packages";
+const { zodPeriod } = tinybird;
 import { withEmailAccount } from "@/utils/middleware";
 import prisma from "@/utils/prisma";
 import { Prisma } from "@prisma/client";
 
 const statsByWeekParams = z.object({
-  period: zodPeriod,
+  period: z.enum(["day", "week", "month", "year"]),
   fromDate: z.coerce.number().nullish(),
   toDate: z.coerce.number().nullish(),
 });

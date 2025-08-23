@@ -9,7 +9,7 @@ import { emailToContent, parseMessage } from "@/utils/mail";
 import { replyToEmail } from "@/utils/gmail/mail";
 import { getThreadMessages } from "@/utils/gmail/thread";
 import { isAssistantEmail } from "@/utils/assistant/is-assistant-email";
-import { getOrCreateInboxZeroLabel, labelMessage } from "@/utils/gmail/label";
+import { getOrCreateLabel, labelMessage } from "@/utils/gmail/label";
 import { internalDateToDate } from "@/utils/date";
 
 const logger = createScopedLogger("process-assistant-email");
@@ -272,13 +272,13 @@ async function withProcessingLabels<T>(
 ): Promise<T> {
   // Get labels first so we can reuse them
   const results = await Promise.allSettled([
-    getOrCreateInboxZeroLabel({
+    getOrCreateLabel({
       gmail,
-      key: "processing",
+      name: "inboxa ai/processing",
     }),
-    getOrCreateInboxZeroLabel({
+    getOrCreateLabel({
       gmail,
-      key: "assistant",
+      name: "inboxa ai/assistant",
     }),
   ]);
 

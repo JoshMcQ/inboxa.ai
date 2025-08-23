@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { sendDigestEmail } from "@inboxzero/resend";
+import { resend } from "@/utils/stub-packages";
+const { sendDigestEmail } = resend;
 import { withEmailAccount, withError } from "@/utils/middleware";
 import { env } from "@/env";
 import { hasCronSecret } from "@/utils/cron";
@@ -115,7 +116,7 @@ async function sendEmail({
     await prisma.digest.updateMany({
       where: {
         id: {
-          in: pendingDigests.map((d) => d.id),
+          in: pendingDigests.map((d: any) => d.id),
         },
       },
       data: {

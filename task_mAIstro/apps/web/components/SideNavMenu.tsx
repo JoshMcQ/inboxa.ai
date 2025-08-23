@@ -27,21 +27,30 @@ export function SideNavMenu({
 }) {
   return (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.name} className="font-semibold">
-          <SidebarMenuButton
-            asChild
-            isActive={item.active || activeHref === item.href}
-            className="h-9"
-            tooltip={item.name}
-          >
-            <Link href={item.href}>
-              <item.icon />
-              <span>{item.name}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+      {items.map((item) => {
+        const active = item.active || activeHref === item.href;
+        return (
+          <SidebarMenuItem key={item.name} className="font-semibold">
+            <SidebarMenuButton
+              asChild
+              isActive={active}
+              // Add active visual per blueprint: left indigo stripe and stronger label
+              className={
+                "h-9 relative " +
+                (active
+                  ? "pl-2 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-indigo-600 text-gray-900 font-medium"
+                  : "")
+              }
+              tooltip={item.name}
+            >
+              <Link href={item.href}>
+                <item.icon />
+                <span>{item.name}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 }

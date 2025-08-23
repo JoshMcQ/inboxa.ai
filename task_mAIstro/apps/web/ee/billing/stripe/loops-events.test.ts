@@ -1,13 +1,23 @@
+import { loops } from "@/utils/stub-packages";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { handleLoopsEvents } from "./loops-events";
 
 // Mock the Loops functions
-vi.mock("@inboxzero/loops", () => ({
-  createContact: vi.fn(),
-  completedTrial: vi.fn(),
-  startedTrial: vi.fn(),
-  cancelledPremium: vi.fn(),
+vi.mock("@/utils/stub-packages", () => ({
+  loops: {
+    createContact: vi.fn(),
+    completedTrial: vi.fn(),
+    startedTrial: vi.fn(),
+    cancelledPremium: vi.fn(),
+    deleteContact: vi.fn(),
+    switchedPremiumPlan: vi.fn(),
+  }
 }));
+
+// Get the mocked functions for testing
+const createContact = loops.createContact;
+const completedTrial = loops.completedTrial;
+const cancelledPremium = loops.cancelledPremium;
 
 // Mock the logger
 vi.mock("@/utils/logger", () => ({
@@ -18,12 +28,13 @@ vi.mock("@/utils/logger", () => ({
   }),
 }));
 
-import {
-  createContact,
-  completedTrial,
-  startedTrial,
-  cancelledPremium,
-} from "@inboxzero/loops";
+// import {
+//   createContact,
+//   completedTrial,
+//   startedTrial,
+//   cancelledPremium,
+// } from "@/utils/stub-packages";
+const { deleteContact: deleteLoopsContact, switchedPremiumPlan, startedTrial } = loops;
 
 describe("handleLoopsEvents", () => {
   beforeEach(() => {

@@ -10,8 +10,8 @@ import { env } from "@/env";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Log in | Inbox Zero",
-  description: "Log in to Inbox Zero.",
+  title: "Log in | InboxaAI",
+  description: "Log in to InboxaAI.",
   alternates: { canonical: "/login" },
 };
 
@@ -66,7 +66,7 @@ export default async function AuthenticationPage(props: {
         </p>
 
         <p className="px-4 pt-4 text-center text-sm text-muted-foreground">
-          Inbox Zero{"'"}s use and transfer of information received from Google
+          InboxaAI{"'"}s use and transfer of information received from Google
           APIs to any other app will adhere to{" "}
           <a
             href="https://developers.google.com/terms/api-services-user-data-policy"
@@ -93,7 +93,7 @@ function ErrorAlert({ error, loggedIn }: { error: string; loggedIn: boolean }) {
           <>
             <span>You can merge accounts instead.</span>
             <Button asChild className="mt-2">
-              <Link href="/accounts">Merge accounts</Link>
+              <Link href="/app-layout/accounts">Merge accounts</Link>
             </Button>
           </>
         }

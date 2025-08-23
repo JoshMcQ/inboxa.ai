@@ -1,9 +1,18 @@
-import {
+import { loops } from "@/utils/stub-packages";
+// import {
+//   createContact,
+//   completedTrial,
+//   startedTrial,
+//   cancelledPremium,
+// } from "@/utils/stub-packages";
+const { 
+  deleteContact: deleteLoopsContact, 
+  switchedPremiumPlan, 
+  startedTrial,
   createContact,
   completedTrial,
-  startedTrial,
-  cancelledPremium,
-} from "@inboxzero/loops";
+  cancelledPremium
+} = loops;
 import { createScopedLogger } from "@/utils/logger";
 
 const logger = createScopedLogger("stripe/syncStripeDataToDb");
@@ -76,7 +85,7 @@ export async function handleLoopsEvents({
     if (directUpgrade) {
       logger.info("Direct upgrade to premium", { email, tier: newTier });
       if (newTier) {
-        await startedTrial(email, newTier);
+        await startedTrial(email);
       }
     }
 

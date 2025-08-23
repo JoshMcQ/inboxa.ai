@@ -18,7 +18,7 @@ import {
 import { createScopedLogger } from "@/utils/logger";
 import type { CleanThreadBody } from "@/app/api/clean/route";
 import { isDefined } from "@/utils/types";
-import { inboxZeroLabels } from "@/utils/label";
+import { inboxaAILabels } from "@/utils/label";
 import prisma from "@/utils/prisma";
 import { CleanAction } from "@prisma/client";
 import { updateThread } from "@/utils/redis/clean";
@@ -102,7 +102,7 @@ export const cleanInboxAction = actionClient
 
         let totalEmailsProcessed = 0;
 
-        const query = `${daysOld ? `older_than:${daysOld}d ` : ""}-in:"${inboxZeroLabels.processed.name}"`;
+        const query = `${daysOld ? `older_than:${daysOld}d ` : ""}-in:"${inboxaAILabels.processed.name}"`;
 
         do {
           // fetch all emails from the user's inbox
@@ -198,8 +198,8 @@ export const undoCleanInboxAction = actionClient
       const markedDoneLabel = await getLabel({
         name:
           action === CleanAction.ARCHIVE
-            ? inboxZeroLabels.archived.name
-            : inboxZeroLabels.marked_read.name,
+            ? inboxaAILabels.archived.name
+            : inboxaAILabels.marked_read.name,
         gmail,
       });
 

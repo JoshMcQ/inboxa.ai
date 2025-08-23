@@ -23,7 +23,7 @@ export const enableReplyTrackerAction = actionClient
   .action(async ({ ctx: { emailAccountId } }) => {
     await enableReplyTracker({ emailAccountId });
 
-    revalidatePath(prefixPath(emailAccountId, "/reply-zero"));
+    revalidatePath(prefixPath(emailAccountId, "/reply-manager"));
 
     return { success: true };
   });
@@ -69,7 +69,7 @@ export const resolveThreadTrackerAction = actionClient
         logger.error("Error stopping Reply Zero analysis", { error });
       });
 
-      revalidatePath(prefixPath(emailAccountId, "/reply-zero"));
+      revalidatePath(prefixPath(emailAccountId, "/reply-manager"));
 
       return { success: true };
     },

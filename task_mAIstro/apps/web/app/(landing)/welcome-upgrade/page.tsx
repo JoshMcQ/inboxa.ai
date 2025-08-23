@@ -1,7 +1,8 @@
 import { CheckCircleIcon } from "lucide-react";
-import { PricingLazy } from "@/app/(app)/premium/PricingLazy";
+import { PricingLazy } from "@/app/app-layout/premium/PricingLazy";
 import { Footer } from "@/app/(landing)/home/Footer";
 import { WelcomeUpgradeNav } from "@/app/(landing)/welcome-upgrade/WelcomeUpgradeNav";
+import { SkipUpgradeButton } from "@/components/SkipUpgradeButton";
 import { userCount } from "@/utils/config";
 
 export default function WelcomeUpgradePage() {
@@ -17,7 +18,7 @@ export default function WelcomeUpgradePage() {
                 Spend 50% less time on email
               </h2>
               <p className="mt-2 font-cal text-2xl text-gray-900 sm:text-3xl">
-                Join {userCount} users that use Inbox Zero
+                Join {userCount} users that use InboxaAI
                 <br />
                 to be more productive!
               </p>
@@ -27,6 +28,10 @@ export default function WelcomeUpgradePage() {
               <TrialFeature>100% no-risk trial</TrialFeature>
               <TrialFeature>Free for the first 7 days</TrialFeature>
               <TrialFeature>Cancel anytime, hassle-free</TrialFeature>
+            </div>
+
+            <div className="mx-auto mt-6">
+              <SkipUpgradeButton />
             </div>
           </div>
         }

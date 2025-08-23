@@ -1,5 +1,6 @@
 import { saveUsage } from "@/utils/redis/usage";
-import { publishAiCall } from "@inboxzero/tinybird-ai-analytics";
+import { tinybirdAiAnalytics } from "@/utils/stub-packages";
+const { publishAiCall } = tinybirdAiAnalytics;
 import { createScopedLogger } from "@/utils/logger";
 
 const logger = createScopedLogger("usage");

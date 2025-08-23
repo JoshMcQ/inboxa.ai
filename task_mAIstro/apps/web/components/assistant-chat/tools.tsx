@@ -19,7 +19,7 @@ import { Tooltip } from "@/components/Tooltip";
 import { deleteRuleAction } from "@/utils/actions/rule";
 import { useAccount } from "@/providers/EmailAccountProvider";
 import { ExpandableText } from "@/components/ExpandableText";
-import { RuleDialog } from "@/app/(app)/[emailAccountId]/assistant/RuleDialog";
+import { RuleDialog } from "@/app/app-layout/[emailAccountId]/assistant/RuleDialog";
 import { useDialogState } from "@/hooks/useDialogState";
 
 export function ToolCard({

@@ -15,7 +15,7 @@ if (!API_KEY) {
 
 // Create server instance
 const server = new McpServer({
-  name: "inbox-zero-ai",
+  name: "inboxa-ai",
   version: "0.0.1",
 });
 
@@ -128,7 +128,7 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Inbox Zero MCP Server running on stdio");
+  console.error("InboxaAI MCP Server running on stdio");
 }
 
 main().catch((error) => {

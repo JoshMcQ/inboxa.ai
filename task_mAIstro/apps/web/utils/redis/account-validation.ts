@@ -35,10 +35,14 @@ export async function getEmailAccount({
   const key = getValidationKey({ userId, emailAccountId });
 
   // Check Redis cache first
-  const cachedResult = await redis.get<string>(key);
-
-  if (cachedResult !== null) {
-    return cachedResult;
+  try {
+    const cachedResult = await redis.get<string>(key);
+    if (cachedResult !== null) {
+      return cachedResult;
+    }
+  } catch (error) {
+    // Redis is not available, continue without cache
+    console.warn("Redis not available for account validation cache:", error);
   }
 
   // Not in cache, check database
@@ -48,7 +52,12 @@ export async function getEmailAccount({
   });
 
   // Cache the result
-  await redis.set(key, emailAccount?.email ?? null, { ex: EXPIRATION });
+  try {
+    await redis.set(key, emailAccount?.email ?? null, { ex: EXPIRATION });
+  } catch (error) {
+    // Redis is not available, continue without caching
+    console.warn("Redis not available for caching account validation:", error);
+  }
 
   return emailAccount?.email ?? null;
 }
@@ -65,5 +74,10 @@ export async function invalidateAccountValidation({
   emailAccountId: string;
 }): Promise<void> {
   const key = getValidationKey({ userId, emailAccountId });
-  await redis.del(key);
+  try {
+    await redis.del(key);
+  } catch (error) {
+    // Redis is not available, no need to invalidate cache
+    console.warn("Redis not available for invalidating account validation:", error);
+  }
 }

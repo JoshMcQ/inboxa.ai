@@ -82,7 +82,7 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: z
       .string()
       .optional()
-      .default("Inbox Zero <updates@transactional.getinboxzero.com>"),
+      .default("InboxaAI <updates@transactional.inboxaai.com>"),
     CRON_SECRET: z.string().optional(),
     LOOPS_API_SECRET: z.string().optional(),
     FB_CONVERSION_API_ACCESS_TOKEN: z.string().optional(),
@@ -105,6 +105,10 @@ export const env = createEnv({
     LICENSE_25_SEAT_VARIANT_ID: z.coerce.number().optional(),
 
     DUB_API_KEY: z.string().optional(),
+    // Voice agent (LangGraph)
+    LANGGRAPH_URL: z.string().optional(),
+    GRAPH_NAME: z.string().optional(),
+    MOCK_VOICE: z.coerce.boolean().optional().default(false),
   },
   client: {
     // stripe
@@ -114,7 +118,7 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_BUSINESS_PLUS_ANNUALLY_PRICE_ID: z.string().optional(),
 
     // lemon squeezy
-    NEXT_PUBLIC_LEMON_STORE_ID: z.string().nullish().default("inboxzero"),
+    NEXT_PUBLIC_LEMON_STORE_ID: z.string().nullish().default("inboxaai"),
     NEXT_PUBLIC_BASIC_MONTHLY_VARIANT_ID: z.coerce.number().default(0),
     NEXT_PUBLIC_BASIC_ANNUALLY_VARIANT_ID: z.coerce.number().default(0),
     NEXT_PUBLIC_PRO_MONTHLY_VARIANT_ID: z.coerce.number().default(0),
@@ -126,18 +130,20 @@ export const env = createEnv({
     NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS: z.number().default(5),
     NEXT_PUBLIC_CALL_LINK: z
       .string()
-      .default("https://cal.com/team/inbox-zero/feedback"),
+      .default("https://cal.com/team/inboxaai/feedback"),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_API_HOST: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HERO_AB: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID: z.string().optional(),
-    NEXT_PUBLIC_BASE_URL: z.string().default("https://www.getinboxzero.com"),
+    NEXT_PUBLIC_BASE_URL: z.string().default("https://inboxa.ai"),
+    NEXT_PUBLIC_LANGGRAPH_URL: z.string().optional(),
+    NEXT_PUBLIC_GRAPH_NAME: z.string().optional(),
     NEXT_PUBLIC_CONTACTS_ENABLED: z.coerce.boolean().optional().default(false),
     NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
     NEXT_PUBLIC_SUPPORT_EMAIL: z
       .string()
       .optional()
-      .default("elie@getinboxzero.com"),
+      .default("support@inboxaai.com"),
     NEXT_PUBLIC_GTM_ID: z.string().optional(),
     NEXT_PUBLIC_CRISP_WEBSITE_ID: z.string().optional(),
     NEXT_PUBLIC_WELCOME_UPGRADE_ENABLED: z.coerce
@@ -192,6 +198,8 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID:
       process.env.NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_LANGGRAPH_URL: process.env.NEXT_PUBLIC_LANGGRAPH_URL,
+    NEXT_PUBLIC_GRAPH_NAME: process.env.NEXT_PUBLIC_GRAPH_NAME,
     NEXT_PUBLIC_CONTACTS_ENABLED: process.env.NEXT_PUBLIC_CONTACTS_ENABLED,
     NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS:
       process.env.NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS,

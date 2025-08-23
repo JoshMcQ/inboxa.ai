@@ -30,7 +30,7 @@ const CrispChat = ({ email }: { email?: string }) => {
     if (
       pathname.includes("/assistant") ||
       pathname.includes("/automation") ||
-      pathname.includes("/reply-zero")
+      pathname.includes("/reply-manager")
     ) {
       Crisp.chat.hide();
     } else {

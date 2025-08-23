@@ -5,8 +5,8 @@ import type { NextAuthConfig, DefaultSession } from "next-auth";
 import { cookies } from "next/headers";
 import type { JWT } from "@auth/core/jwt";
 import GoogleProvider from "next-auth/providers/google";
-import { createContact as createLoopsContact } from "@inboxzero/loops";
-import { createContact as createResendContact } from "@inboxzero/resend";
+import { createContact as createLoopsContact } from "@inboxa/loops";
+import { createContact as createResendContact } from "@inboxa/resend";
 import prisma from "@/utils/prisma";
 import { env } from "@/env";
 import { captureException } from "@/utils/error";
@@ -91,19 +91,22 @@ export const getAuthOptions: (options?: {
               (p) => p.metadata?.primary,
             )?.url;
           } catch (profileError) {
-            logger.error("[linkAccount] Error fetching profile info:", {
+            logger.error("[linkAccount] Error fetching profile info, falling back to basic profile:", {
               profileError,
             });
-            // Decide if this is fatal. Probably should be.
-            throw new Error(
-              "Failed to fetch profile info for linking account.",
-            );
+            // Fall back to basic profile data from NextAuth instead of failing
+            primaryEmail = (profile as any)?.email?.toLowerCase();
+            primaryName = (profile as any)?.name;
+            primaryPhotoUrl = (profile as any)?.picture;
           }
         } else {
           logger.error(
-            "[linkAccount] No access_token found in data, cannot fetch profile.",
+            "[linkAccount] No access_token found in data, falling back to basic profile.",
           );
-          throw new Error("Missing access token during account linking.");
+          // Fall back to basic profile data from NextAuth
+          primaryEmail = (profile as any)?.email?.toLowerCase();
+          primaryName = (profile as any)?.name;
+          primaryPhotoUrl = (profile as any)?.picture;
         }
 
         if (!primaryEmail) {

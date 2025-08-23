@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { HeroHome } from "@/app/(landing)/home/Hero";
-import { FeaturesHome } from "@/app/(landing)/home/Features";
-import { Privacy } from "@/app/(landing)/home/Privacy";
+import { SocialProof } from "@/app/(landing)/home/SocialProof";
+import { CoreValueProps } from "@/app/(landing)/home/CoreValueProps";
+import { HowItWorks } from "@/app/(landing)/home/HowItWorks";
+import { FeatureHighlights } from "@/app/(landing)/home/FeatureHighlights";
 import { Testimonials } from "@/app/(landing)/home/Testimonials";
-import { PricingLazy } from "@/app/(app)/premium/PricingLazy";
-import { FAQs } from "@/app/(landing)/home/FAQs";
+import { PricingLazy } from "@/app/app-layout/premium/PricingLazy";
 import { CTA } from "@/app/(landing)/home/CTA";
 import { BasicLayout } from "@/components/layouts/BasicLayout";
 
@@ -14,11 +15,12 @@ export default function Home() {
   return (
     <BasicLayout>
       <HeroHome />
+      <SocialProof />
+      <CoreValueProps />
+      <HowItWorks />
+      <FeatureHighlights />
       <Testimonials />
-      <Privacy />
-      <FeaturesHome />
       <PricingLazy className="pb-32" />
-      <FAQs />
       <CTA />
     </BasicLayout>
   );

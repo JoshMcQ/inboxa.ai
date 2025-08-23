@@ -1,6 +1,6 @@
 import { messageVisibility } from "@/utils/gmail/constants";
 
-export const PARENT_LABEL = "Inbox Zero";
+export const PARENT_LABEL = "InboxaAI";
 
 const blue = "#b6cff5";
 const cyan = "#98d7e4";
@@ -25,7 +25,7 @@ const LABEL_COLORS = [
   green,
 ] as const;
 
-export const inboxZeroLabels = {
+export const inboxaAILabels = {
   archived: {
     name: `${PARENT_LABEL}/Archived`,
     color: blue,
@@ -63,7 +63,7 @@ export const inboxZeroLabels = {
   },
 } as const;
 
-export type InboxZeroLabel = keyof typeof inboxZeroLabels;
+export type InboxaAILabel = keyof typeof inboxaAILabels;
 
 export function getRandomLabelColor() {
   return LABEL_COLORS[Math.floor(Math.random() * LABEL_COLORS.length)];

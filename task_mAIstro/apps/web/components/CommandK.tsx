@@ -77,6 +77,38 @@ export function CommandK() {
 
   const navigation = useNavigation();
 
+  // Back-compat and resilience:
+  // Normalize items so CommandK doesn't break if useNavigation shape changes.
+  const allNavItems =
+    [
+      ...(navigation?.assistantItems ?? []),
+      ...(navigation?.cleanItems ?? []),
+      ...(navigation?.mainItems ?? []),
+    ]
+      // de-dup by name+href
+      .filter(Boolean)
+      .reduce(
+        (acc: Array<any>, item: any) => {
+          if (!item) return acc;
+          const key = `${item.name}|${item.href}`;
+          if (!acc.some((i) => `${i.name}|${i.href}` === key)) acc.push(item);
+          return acc;
+        },
+        [],
+      );
+
+  const assistantGroup = allNavItems.filter((i) =>
+    String(i.name || "").toLowerCase().includes("assistant"),
+  );
+
+  // Tools bucket based on label keywords
+  const toolsKeywords = ["unsubscribe", "clean", "insights", "automation"];
+  const toolsGroup = allNavItems.filter((i) =>
+    toolsKeywords.some((k) =>
+      String(i.name || "").toLowerCase().includes(k),
+    ),
+  );
+
   return (
     <>
       <CommandDialog
@@ -119,34 +151,44 @@ export function CommandK() {
               <CommandShortcut>C</CommandShortcut>
             </CommandItem>
           </CommandGroup>
-          <CommandGroup heading="Assistant">
-            {navigation.assistantItems.map((option) => (
-              <CommandItem
-                key={option.name}
-                onSelect={() => {
-                  router.push(option.href);
-                  setOpen(false);
-                }}
-              >
-                <option.icon className="mr-2 h-4 w-4" />
-                <span>{option.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-          <CommandGroup heading="Clean">
-            {navigation.cleanItems.map((option) => (
-              <CommandItem
-                key={option.name}
-                onSelect={() => {
-                  router.push(option.href);
-                  setOpen(false);
-                }}
-              >
-                <option.icon className="mr-2 h-4 w-4" />
-                <span>{option.name}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+
+          {assistantGroup.length > 0 && (
+            <CommandGroup heading="Assistant">
+              {assistantGroup.map((option) => (
+                <CommandItem
+                  key={`${option.name}-${option.href}`}
+                  onSelect={() => {
+                    router.push(option.href);
+                    setOpen(false);
+                  }}
+                >
+                  {option.icon ? (
+                    <option.icon className="mr-2 h-4 w-4" />
+                  ) : null}
+                  <span>{option.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+
+          {toolsGroup.length > 0 && (
+            <CommandGroup heading="Tools">
+              {toolsGroup.map((option) => (
+                <CommandItem
+                  key={`${option.name}-${option.href}`}
+                  onSelect={() => {
+                    router.push(option.href);
+                    setOpen(false);
+                  }}
+                >
+                  {option.icon ? (
+                    <option.icon className="mr-2 h-4 w-4" />
+                  ) : null}
+                  <span>{option.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>
