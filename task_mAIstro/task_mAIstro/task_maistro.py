@@ -19,6 +19,8 @@ from langgraph.store.base import BaseStore
 from langgraph.store.memory import InMemoryStore
 
 import configuration
+from gmail_tools import GMAIL_TOOLS
+from voice_commands import process_voice_command
 
 import os
 from dotenv import load_dotenv
@@ -148,11 +150,12 @@ class EmailDraft(BaseModel):
 
 # Update memory tool
 class UpdateMemory(TypedDict):
-    """ Decision on what memory type to update """
-    update_type: Literal['user', 'todo', 'instructions', 'email']
+    """ Decision on what memory type to update. Use only when specifically needed to update user info, todos, or handle emails. """
+    update_type: Literal['user', 'todo', 'instructions', 'email', 'gmail']
 
-# Initialize the model
+# Initialize the model with Gmail tools and voice commands
 model = ChatOpenAI(model="gpt-4o", temperature=0)
+model_with_tools = model.bind_tools(GMAIL_TOOLS + [UpdateMemory, process_voice_command], parallel_tool_calls=False)
 
 ## Create the Trustcall extractors for updating the user profile and ToDo list
 profile_extractor = create_extractor(
@@ -194,23 +197,37 @@ Here are the current user-specified preferences for updating the ToDo list (may 
 
 Here are your instructions for reasoning about the user's messages:
 
-1. Reason carefully about the user's messages as presented below. 
+1. Reason carefully about the user's messages as presented below.
 
-2. Decide whether any of your long-term memory should be updated:
+2. First, check if the user is asking for Gmail functionality:
+- Use the appropriate Gmail tools for email operations (reading, sending, searching, archiving, etc.)
+- Gmail tools are available for: sending emails, reading messages, searching, managing threads, labels, and all email operations
+- Always check Gmail service status first if Gmail operations fail
+
+3. Decide whether any of your long-term memory should be updated:
 - If personal information was provided about the user, update the user's profile by calling UpdateMemory tool with type `user`
 - If tasks are mentioned, update the ToDo list by calling UpdateMemory tool with type `todo`
 - If the user has specified preferences for how to update the ToDo list, update the instructions by calling UpdateMemory tool with type `instructions`
 - If email composition, replies, or email-related requests are mentioned, update emails by calling UpdateMemory tool with type `email`
+- If Gmail operations were performed, update memory with type `gmail`
 
-3. Tell the user that you have updated your memory, if appropriate:
+4. Tell the user that you have updated your memory, if appropriate:
 - Do not tell the user you have updated the user's profile
 - Tell the user when you update the todo list
 - Do not tell the user that you have updated instructions
 - Tell the user when you create or update email drafts
+- Summarize Gmail operations performed
 
-4. For email requests, be specific about what email content was captured and ask for clarification on recipient details if needed.
+5. For email requests, be specific about what email content was captured and ask for clarification on recipient details if needed.
 
-5. Respond naturally to user after a tool call was made to save memories, or if no tool call was made."""
+6. For simple greetings, questions, or general conversation, respond directly without using tools.
+
+7. Only use tools when specifically needed:
+   - UpdateMemory tool only when you need to save important user information, tasks, or emails
+   - Gmail tools only when user asks for specific email operations
+   - process_voice_command only for voice-specific requests
+
+8. Respond naturally and conversationally, especially for voice interactions."""
 
 # Trustcall instruction
 TRUSTCALL_INSTRUCTION = """Reflect on following interaction. 
@@ -278,8 +295,8 @@ def task_mAIstro(state: MessagesState, config: RunnableConfig, store: BaseStore)
         instructions=instructions
     )
 
-    # Respond using memory as well as the chat history
-    response = model.bind_tools([UpdateMemory], parallel_tool_calls=False).invoke([SystemMessage(content=system_msg)]+state["messages"])
+    # Respond using memory as well as the chat history, with Gmail tools and voice commands available
+    response = model_with_tools.invoke([SystemMessage(content=system_msg)]+state["messages"])
 
     return {"messages": [response]}
 
@@ -459,24 +476,111 @@ def update_emails(state: MessagesState, config: RunnableConfig, store: BaseStore
     email_update_msg = extract_tool_info(spy.called_tools, tool_name)
     return {"messages": [{"role": "tool", "content": email_update_msg, "tool_call_id": tool_calls[0]['id']}]}
 
+def handle_gmail(state: MessagesState, config: RunnableConfig, store: BaseStore):
+    """Handle Gmail operations and log to memory."""
+    
+    # Get the user ID from the config
+    configurable = configuration.Configuration.from_runnable_config(config)
+    user_id = configurable.user_id
+    todo_category = configurable.todo_category
+
+    # Define the namespace for Gmail operation memories (sanitize user_id for LangGraph store)
+    sanitized_user_id = user_id.replace("@", "_at_").replace(".", "_")
+    namespace = ("gmail_operations", todo_category, sanitized_user_id)
+
+    # Find the AI message with tool calls (should be the last AIMessage before any tool responses)
+    ai_message_with_tools = None
+    for message in reversed(state['messages']):
+        if hasattr(message, 'tool_calls') and getattr(message, 'tool_calls', []):
+            ai_message_with_tools = message
+            break
+    
+    if not ai_message_with_tools:
+        return {"messages": []}
+    
+    # Extract Gmail operations and execute them
+    gmail_operations = []
+    gmail_tool_names = [tool.name for tool in GMAIL_TOOLS]  # Use .name instead of .__name__
+    tool_responses = []
+    
+    for tool_call in ai_message_with_tools.tool_calls:
+        if tool_call['name'] in gmail_tool_names:
+            gmail_operations.append({
+                "operation": tool_call['name'],
+                "args": tool_call['args'],
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # Execute the Gmail tool and generate response
+            for tool in GMAIL_TOOLS:
+                if tool.name == tool_call['name']:
+                    try:
+                        # Pass configuration to Gmail tools
+                        args = tool_call['args'].copy()
+                        args['config'] = config.get("configurable", {})
+                        
+                        result = tool.func(**args)
+                        tool_responses.append({
+                            "role": "tool",
+                            "content": str(result),
+                            "tool_call_id": tool_call['id']
+                        })
+                    except Exception as e:
+                        tool_responses.append({
+                            "role": "tool", 
+                            "content": f"Error executing {tool_call['name']}: {str(e)}",
+                            "tool_call_id": tool_call['id']
+                        })
+                    break
+    
+    # Store Gmail operations in memory
+    if gmail_operations:
+        operation_summary = f"Gmail operations performed: {', '.join([op['operation'] for op in gmail_operations])}"
+        store.put(namespace, 
+                  str(uuid.uuid4()), 
+                  {
+                      "operations": gmail_operations,
+                      "summary": operation_summary,
+                      "timestamp": datetime.now().isoformat()
+                  })
+    
+    return {"messages": tool_responses}
+
 # Conditional edge
-def route_message(state: MessagesState, config: RunnableConfig, store: BaseStore) -> Literal["__end__", "update_todos", "update_instructions", "update_profile", "update_emails"]:
+def route_message(state: MessagesState, config: RunnableConfig, store: BaseStore) -> Literal["__end__", "update_todos", "update_instructions", "update_profile", "update_emails", "handle_gmail"]:
     """Reflect on the memories and chat history to decide whether to update the memory collection."""
     message = state['messages'][-1]
     if len(message.tool_calls) == 0:
         return END
     else:
         tool_call = message.tool_calls[0]
-        if tool_call['args']['update_type'] == "user":
-            return "update_profile"
-        elif tool_call['args']['update_type'] == "todo":
-            return "update_todos"
-        elif tool_call['args']['update_type'] == "instructions":
-            return "update_instructions"
-        elif tool_call['args']['update_type'] == "email":
-            return "update_emails"
-        else:
-            raise ValueError
+        tool_name = tool_call.get('name', '')
+        
+        # Handle Gmail tools directly
+        if tool_name in ['list_gmail_messages', 'get_gmail_message', 'send_gmail_message', 'search_gmail', 'archive_gmail_message', 'delete_gmail_message', 'create_gmail_label', 'add_gmail_label', 'remove_gmail_label', 'mark_gmail_as_read', 'mark_gmail_as_unread', 'read_gmail_message', 'reply_to_gmail', 'check_gmail_service_status']:
+            return "handle_gmail"
+        
+        # Handle UpdateMemory tool calls
+        if tool_name == 'UpdateMemory':
+            update_type = tool_call.get('args', {}).get('update_type')
+            if not update_type:
+                return END
+            
+            if update_type == "user":
+                return "update_profile"
+            elif update_type == "todo":
+                return "update_todos"
+            elif update_type == "instructions":
+                return "update_instructions"
+            elif update_type == "email":
+                return "update_emails"
+            elif update_type == "gmail":
+                return "handle_gmail"
+            else:
+                return END
+        
+        # Handle other tools (like process_voice_command)
+        return END
 
 # Create the graph + all nodes
 builder = StateGraph(MessagesState, config_schema=configuration.Configuration)
@@ -487,6 +591,7 @@ builder.add_node(update_todos)
 builder.add_node(update_profile)
 builder.add_node(update_instructions)
 builder.add_node("update_emails", update_emails)
+builder.add_node("handle_gmail", handle_gmail)
 
 # Define the flow 
 builder.add_edge(START, "task_mAIstro")
@@ -495,6 +600,7 @@ builder.add_edge("update_todos", "task_mAIstro")
 builder.add_edge("update_profile", "task_mAIstro")
 builder.add_edge("update_instructions", "task_mAIstro")
 builder.add_edge("update_emails", "task_mAIstro")
+builder.add_edge("handle_gmail", "task_mAIstro")
 
-# Compile the graph
-graph = builder.compile()
+# Export the builder so the server can compile it with store and checkpointer
+# Don't compile here, let the server do it

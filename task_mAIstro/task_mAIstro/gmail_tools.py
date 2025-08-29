@@ -33,60 +33,120 @@ class GmailError(Exception):
     """Custom exception for Gmail-related errors"""
     pass
 
-def _make_gmail_request(method: str, endpoint: str, data: Optional[Dict] = None, params: Optional[Dict] = None) -> Dict[str, Any]:
+def _make_gmail_request(method: str, endpoint: str, data: Optional[Dict] = None, params: Optional[Dict] = None, config: Optional[Dict] = None) -> Dict[str, Any]:
     """
-    Make a secure request to the Gmail microservice with proper error handling
+    Make authenticated HTTP requests to the Next.js Gmail API endpoints
     """
-    url = f"{GMAIL_SERVICE_URL}{endpoint}"
+    if not config:
+        return {
+            "error": "Authentication configuration missing",
+            "message": "Voice assistant requires authentication context to access Gmail data.",
+            "status": "configuration_error"
+        }
+    
+    api_base_url = config.get("api_base_url")
+    email_account_id = config.get("email_account_id")
+    session_cookies = config.get("session_cookies")
+    
+    if not api_base_url or not email_account_id:
+        return {
+            "error": "Missing authentication parameters",
+            "message": "API base URL and email account ID are required for Gmail access.",
+            "status": "configuration_error"
+        }
     
     try:
-        # Set timeout and proper headers
-        headers = {"Content-Type": "application/json"} if data else {}
-        timeout = 30  # 30 second timeout
+        # Map Gmail tool endpoints to actual Next.js API endpoints
+        endpoint_mapping = {
+            "/api/messages": "api/google/messages",
+            "/api/messages/search": "api/google/messages",  # search via query param
+            "/api/google/messages/batch": "api/google/messages/batch",  # batch endpoint
+            "/messages/": "api/google/messages/",  # for specific message operations
+            "/api/threads": "api/google/threads",
+            "/threads/": "api/google/threads/",
+            "/api/labels": "api/google/labels",
+            "/labels/": "api/google/labels/",
+        }
         
-        if method.upper() == "GET":
-            response = requests.get(url, params=params, headers=headers, timeout=timeout)
-        elif method.upper() == "POST":
-            response = requests.post(url, json=data, headers=headers, timeout=timeout)
-        elif method.upper() == "PUT":
-            response = requests.put(url, json=data, headers=headers, timeout=timeout)
-        elif method.upper() == "DELETE":
-            response = requests.delete(url, json=data, headers=headers, timeout=timeout)
+        # Find the correct Next.js endpoint
+        nextjs_endpoint = None
+        for pattern, nextjs_path in endpoint_mapping.items():
+            if endpoint.startswith(pattern):
+                nextjs_endpoint = endpoint.replace(pattern, nextjs_path)
+                break
+        
+        if not nextjs_endpoint:
+            # Default mapping - remove /api prefix and use google/ prefix
+            clean_endpoint = endpoint.lstrip("/").replace("api/", "")
+            nextjs_endpoint = f"google/{clean_endpoint}"
+        
+        url = f"{api_base_url}/{nextjs_endpoint.lstrip('/')}"
+        
+        # Add query parameters if provided
+        if params:
+            query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+            url += f"?{query_string}"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "X-Email-Account-ID": email_account_id,
+        }
+        
+        # Handle authentication - either via session cookies or internal auth
+        internal_auth = config.get("internal_auth")
+        if internal_auth:
+            # Use internal auth for webhook-based requests
+            headers["X-Internal-Auth"] = internal_auth
+            logger.info("Using internal authentication for Gmail API")
+        elif session_cookies:
+            # Use session cookies for browser-based requests
+            headers["Cookie"] = session_cookies
+            logger.info("Using session cookie authentication for Gmail API")
         else:
-            raise GmailError(f"Unsupported HTTP method: {method}")
+            logger.warning("No authentication method available for Gmail API")
         
-        # Handle different response codes appropriately
+        # Make the request
+        if method.upper() == "GET":
+            response = requests.get(url, headers=headers, timeout=10)
+        elif method.upper() == "POST":
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+        else:
+            return {
+                "error": "Unsupported HTTP method",
+                "method": method,
+                "status": "method_error"
+            }
+        
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 401:
-            raise GmailError("Authentication required. Please authenticate with Gmail first.")
-        elif response.status_code == 403:
-            raise GmailError("Insufficient permissions. Check Gmail API permissions.")
-        elif response.status_code == 429:
-            raise GmailError("Rate limit exceeded. Please try again later.")
-        elif response.status_code == 404:
-            raise GmailError("Endpoint not found. Check Gmail service configuration.")
         else:
             try:
                 error_data = response.json()
-                error_msg = error_data.get('error', f'HTTP {response.status_code}')
-                raise GmailError(f"Gmail API error: {error_msg}")
+                return {
+                    "error": f"API request failed with status {response.status_code}",
+                    "details": error_data.get("error", "Unknown error"),
+                    "status": "api_error"
+                }
             except:
-                raise GmailError(f"Gmail API error: HTTP {response.status_code} - {response.text[:200]}")
-    
-    except requests.exceptions.ConnectionError:
-        raise GmailError(f"Cannot connect to Gmail service at {GMAIL_SERVICE_URL}. Is the service running?")
-    except requests.exceptions.Timeout:
-        raise GmailError("Request timeout. Gmail service may be overloaded.")
+                return {
+                    "error": f"API request failed with status {response.status_code}",
+                    "response": response.text[:200] if response.text else "No response body",
+                    "status": "api_error"
+                }
+            
     except requests.exceptions.RequestException as e:
-        raise GmailError(f"Request failed: {str(e)}")
+        return {
+            "error": "Failed to connect to Gmail API",
+            "message": str(e),
+            "status": "connection_error"
+        }
 
 # =============================================================================
 # CORE EMAIL TOOLS
 # =============================================================================
 
 @tool
-def send_gmail(recipient: str, subject: str, body: str) -> str:
+def send_gmail(recipient: str, subject: str, body: str, config: Optional[Dict] = None) -> str:
     """
     Send an email via Gmail API.
     
@@ -94,6 +154,7 @@ def send_gmail(recipient: str, subject: str, body: str) -> str:
         recipient: Email address of the recipient
         subject: Subject line of the email
         body: HTML or plain text body of the email
+        config: Authentication configuration (passed internally)
     
     Returns:
         String confirming email was sent with message ID
@@ -103,9 +164,13 @@ def send_gmail(recipient: str, subject: str, body: str) -> str:
             "to": recipient,
             "subject": subject,
             "body": body
-        })
+        }, config=config)
+        
+        if result.get("error"):
+            return f"❌ Failed to send email: {result.get('message', result.get('error'))}"
+        
         return f"✅ Email sent successfully to {recipient}! Message ID: {result.get('messageId', 'unknown')}"
-    except GmailError as e:
+    except Exception as e:
         return f"❌ Failed to send email: {str(e)}"
 
 @tool
@@ -138,13 +203,14 @@ def send_gmail_with_attachments(recipient: str, subject: str, body: str, attachm
         return f"❌ Failed to send email with attachments: {str(e)}"
 
 @tool
-def list_gmail_messages(max_results: int = 10, query: str = None) -> str:
+def list_gmail_messages(max_results: int = 10, query: str = None, config: Optional[Dict] = None) -> str:
     """
     List recent Gmail messages.
     
     Args:
         max_results: Maximum number of messages to return (default: 10)
         query: Optional search query to filter messages
+        config: Authentication configuration (passed internally)
     
     Returns:
         String with formatted list of messages
@@ -154,7 +220,10 @@ def list_gmail_messages(max_results: int = 10, query: str = None) -> str:
         if query:
             params["q"] = query
             
-        result = _make_gmail_request("GET", "/api/messages", params=params)
+        result = _make_gmail_request("GET", "/api/messages", params=params, config=config)
+        
+        if result.get("error"):
+            return f"❌ Failed to list messages: {result.get('message', result.get('error'))}"
         
         if not result.get("messages"):
             return "📭 No messages found."
@@ -163,10 +232,12 @@ def list_gmail_messages(max_results: int = 10, query: str = None) -> str:
         formatted_messages = []
         
         for i, msg in enumerate(messages[:max_results], 1):
+            # Handle different message format from Next.js API
+            headers = msg.get('headers', {})
             formatted_msg = f"""
-{i}. From: {msg.get('from', 'Unknown')}
-   Subject: {msg.get('subject', 'No subject')}
-   Date: {msg.get('date', 'Unknown date')}
+{i}. From: {headers.get('from', msg.get('from', 'Unknown'))}
+   Subject: {headers.get('subject', msg.get('subject', 'No subject'))}
+   Date: {headers.get('date', msg.get('date', 'Unknown date'))}
    Snippet: {msg.get('snippet', 'No preview available')}
    Message ID: {msg.get('id', 'Unknown')}
 """
@@ -174,44 +245,67 @@ def list_gmail_messages(max_results: int = 10, query: str = None) -> str:
         
         return f"✅ Found {len(messages)} messages:\n" + "\n".join(formatted_messages)
     
-    except GmailError as e:
+    except Exception as e:
         return f"❌ Failed to list messages: {str(e)}"
 
 @tool
-def read_gmail_message(message_id: str) -> str:
+def read_gmail_message(message_id: str, config: Optional[Dict] = None) -> str:
     """
     Read a specific Gmail message by ID.
     
     Args:
         message_id: The ID of the message to read
+        config: Authentication configuration (passed internally)
     
     Returns:
         String with formatted message content
     """
     try:
-        result = _make_gmail_request("GET", f"/messages/{message_id}")
+        # Use the batch endpoint with a single message ID to get full message content
+        result = _make_gmail_request("GET", f"/api/google/messages/batch?ids={message_id}", config=config)
+        
+        if result.get("error"):
+            return f"❌ Failed to read message: {result.get('message', result.get('error'))}"
+        
+        # The batch endpoint returns { messages: [...] }
+        messages = result.get("messages", [])
+        if not messages:
+            return f"❌ Message with ID '{message_id}' not found or has no content."
+        
+        message = messages[0]  # Get the first (and only) message
+        
+        # Extract message details from the batch response format
+        headers = message.get("headers", {})
+        from_addr = headers.get("From") or message.get("from", "Unknown")
+        to_addr = headers.get("To") or message.get("to", "Unknown") 
+        subject = headers.get("Subject") or message.get("subject", "No subject")
+        date = headers.get("Date") or message.get("date", "Unknown date")
+        
+        # Get the message body (prefer textPlain over textHtml)
+        body = message.get("textPlain") or message.get("textHtml") or message.get("snippet") or "No content available"
         
         return f"""
 📧 Email Details:
-From: {result.get('from', 'Unknown')}
-To: {result.get('to', 'Unknown')}
-Subject: {result.get('subject', 'No subject')}
-Date: {result.get('date', 'Unknown date')}
+From: {from_addr}
+To: {to_addr}
+Subject: {subject}
+Date: {date}
 
-Body:
-{result.get('body', 'No content available')}
+📝 Email Content:
+{body}
 """
-    except GmailError as e:
+    except Exception as e:
         return f"❌ Failed to read message: {str(e)}"
 
 @tool
-def reply_to_gmail(message_id: str, reply_body: str) -> str:
+def reply_to_gmail(message_id: str, reply_body: str, config: Optional[Dict] = None) -> str:
     """
     Reply to a specific Gmail message.
     
     Args:
         message_id: The ID of the message to reply to
         reply_body: The body of the reply
+        config: Authentication configuration (passed internally)
     
     Returns:
         String confirming reply was sent
@@ -219,26 +313,117 @@ def reply_to_gmail(message_id: str, reply_body: str) -> str:
     try:
         result = _make_gmail_request("POST", f"/messages/{message_id}/reply", {
             "body": reply_body
-        })
+        }, config=config)
         return f"✅ Reply sent successfully! Message ID: {result.get('messageId', 'unknown')}"
     except GmailError as e:
         return f"❌ Failed to send reply: {str(e)}"
 
 @tool
-def search_gmail(query: str, max_results: int = 10) -> str:
+def search_gmail_smart(query: str, max_results: int = 10, config: Optional[Dict] = None) -> str:
+    """
+    Intelligently search Gmail with multiple query variations if the first attempt fails.
+    
+    Args:
+        query: Search query (will try variations if no results)
+        max_results: Maximum number of results to return
+        config: Authentication configuration (passed internally)
+    
+    Returns:
+        String with formatted search results
+    """
+    def try_search(search_query):
+        try:
+            params = {"q": search_query, "maxResults": max_results}
+            result = _make_gmail_request("GET", "/api/messages", params=params, config=config)
+            
+            if result.get("error"):
+                return None
+                
+            return result.get("messages", [])
+        except:
+            return None
+    
+    # Try the original query first
+    messages = try_search(query)
+    if messages:
+        return _format_search_results(query, messages, max_results)
+    
+    # If no results, try variations based on the query content
+    variations = []
+    
+    # Extract key terms and create variations
+    terms = query.lower().split()
+    
+    # Common variations for business names
+    if "man cave" in query.lower():
+        variations.extend([
+            "mancave",
+            "barber", 
+            "haircut",
+            "appointment",
+            "confirmation",
+            "man-cave",
+            "mens haircut"
+        ])
+    
+    # Try each variation
+    for variation in variations:
+        messages = try_search(variation)
+        if messages:
+            return f"🔍 Found results with variation '{variation}':\n\n" + _format_search_results(variation, messages, max_results)
+    
+    # Try broader searches with individual terms
+    for term in terms:
+        if len(term) > 3:  # Only try meaningful terms
+            messages = try_search(term)
+            if messages:
+                return f"🔍 Found results searching for '{term}':\n\n" + _format_search_results(term, messages, max_results)
+    
+    return f"🔍 No messages found for '{query}' or related variations. Tried: {', '.join(variations + terms)}"
+
+def _format_search_results(query: str, messages: list, max_results: int) -> str:
+    """Helper function to format search results consistently."""
+    if not messages:
+        return f"🔍 No messages found for query: '{query}'"
+    
+    formatted_messages = []
+    
+    for i, msg in enumerate(messages[:max_results], 1):
+        headers = msg.get('headers', {})
+        message_id = msg.get('id', msg.get('messageId', 'unknown'))
+        formatted_msg = f"""
+{i}. From: {headers.get('from', msg.get('from', 'Unknown'))}
+   Subject: {headers.get('subject', msg.get('subject', 'No subject'))}
+   Date: {headers.get('date', msg.get('date', 'Unknown date'))}
+   Snippet: {msg.get('snippet', 'No preview available')}
+   Message ID: {message_id}
+   
+   ⚠️  To read the full content of this email, use: read_gmail_message("{message_id}")
+"""
+        formatted_messages.append(formatted_msg)
+    
+    return f"🔍 Search results for '{query}':\n" + "\n".join(formatted_messages)
+
+@tool
+def search_gmail(query: str, max_results: int = 10, config: Optional[Dict] = None) -> str:
     """
     Search Gmail messages using Gmail search syntax.
     
     Args:
         query: Search query (e.g., "from:user@example.com", "subject:urgent", "is:unread")
         max_results: Maximum number of results to return
+        config: Authentication configuration (passed internally)
     
     Returns:
         String with formatted search results
     """
     try:
-        data = {"query": query, "maxResults": max_results}
-        result = _make_gmail_request("POST", "/api/messages/search", data=data)
+        # Use GET request with query parameter instead of POST for Next.js API
+        params = {"q": query, "maxResults": max_results}
+        result = _make_gmail_request("GET", "/api/messages", params=params, config=config)
+        
+        if result.get("error"):
+            return f"❌ Search failed: {result.get('message', result.get('error'))}"
         
         if not result.get("messages"):
             return f"🔍 No messages found for query: '{query}'"
@@ -247,17 +432,29 @@ def search_gmail(query: str, max_results: int = 10) -> str:
         formatted_results = []
         
         for i, msg in enumerate(messages, 1):
+            # Handle different message format from Next.js API
+            headers = msg.get('headers', {})
+            message_id = msg.get('id', msg.get('messageId', 'unknown'))
+            
+            # Ensure we have a valid message ID for reading the full content
+            if message_id == 'unknown' or not message_id:
+                logger.warning(f"Message {i} has no valid ID: {msg}")
+                message_id = f"no-id-{i}"  # Fallback for debugging
+            
             formatted_msg = f"""
-{i}. From: {msg.get('from', 'Unknown')}
-   Subject: {msg.get('subject', 'No subject')}
-   Date: {msg.get('date', 'Unknown date')}
+{i}. From: {headers.get('from', msg.get('from', 'Unknown'))}
+   Subject: {headers.get('subject', msg.get('subject', 'No subject'))}
+   Date: {headers.get('date', msg.get('date', 'Unknown date'))}
    Snippet: {msg.get('snippet', 'No preview available')}
+   Message ID: {message_id}
+   
+   ⚠️  To read the full content of this email, use: read_gmail_message("{message_id}")
 """
             formatted_results.append(formatted_msg)
         
         return f"🔍 Search results for '{query}':\n" + "\n".join(formatted_results)
     
-    except GmailError as e:
+    except Exception as e:
         return f"❌ Search failed: {str(e)}"
 
 @tool
