@@ -18,6 +18,9 @@ from langchain_core.tools import tool
 import os
 from dotenv import load_dotenv
 import logging
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -66,6 +69,7 @@ def _make_gmail_request(method: str, endpoint: str, data: Optional[Dict] = None,
             "/threads/": "api/google/threads/",
             "/api/labels": "api/google/labels",
             "/labels/": "api/google/labels/",
+            "/send": "api/google/send",
         }
         
         # Find the correct Next.js endpoint
@@ -106,14 +110,19 @@ def _make_gmail_request(method: str, endpoint: str, data: Optional[Dict] = None,
             logger.warning("No authentication method available for Gmail API")
         
         # Make the request
-        if method.upper() == "GET":
-            response = requests.get(url, headers=headers, timeout=10)
-        elif method.upper() == "POST":
-            response = requests.post(url, headers=headers, json=data, timeout=10)
+        m = method.upper()
+        if m == "GET":
+            response = requests.get(url, headers=headers, timeout=15)
+        elif m == "POST":
+            response = requests.post(url, headers=headers, json=data, timeout=20)
+        elif m == "PUT":
+            response = requests.put(url, headers=headers, json=data, timeout=20)
+        elif m == "DELETE":
+            response = requests.delete(url, headers=headers, json=data, timeout=20)
         else:
             return {
                 "error": "Unsupported HTTP method",
-                "method": method,
+                "method": m,
                 "status": "method_error"
             }
         
@@ -275,11 +284,40 @@ def read_gmail_message(message_id: str, config: Optional[Dict] = None) -> str:
         message = messages[0]  # Get the first (and only) message
         
         # Extract message details from the batch response format
-        headers = message.get("headers", {})
-        from_addr = headers.get("From") or message.get("from", "Unknown")
-        to_addr = headers.get("To") or message.get("to", "Unknown") 
-        subject = headers.get("Subject") or message.get("subject", "No subject")
-        date = headers.get("Date") or message.get("date", "Unknown date")
+        headers = message.get("headers", {}) or {}
+        
+        # Case-insensitive header getter with message-level fallback
+        def _h(key: str, default: str = "") -> str:
+            if isinstance(headers, dict):
+                return headers.get(key) or headers.get(key.lower()) or headers.get(key.title()) or message.get(key.lower(), default)
+            return message.get(key.lower(), default)
+        
+        from_addr = _h("from", "Unknown")
+        to_addr = _h("to", "Unknown")
+        subject = _h("subject", "No subject")
+        date_str = _h("date", "Unknown date")
+
+        # Compute a friendly relative date if possible (using user's timezone when available)
+        relative_note = ""
+        try:
+            dt = parsedate_to_datetime(date_str) if date_str and date_str != "Unknown date" else None
+            if dt is not None:
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                # Determine user's timezone
+                user_tz_name = None
+                if isinstance(config, dict):
+                    user_tz_name = config.get("user_timezone")
+                tz = ZoneInfo(user_tz_name) if user_tz_name else dt.tzinfo
+                now_local = datetime.now(tz if isinstance(tz, ZoneInfo) else timezone.utc)
+                d_today = now_local.date()
+                d_msg = dt.astimezone(tz).date() if isinstance(tz, ZoneInfo) else dt.date()
+                if d_msg == d_today:
+                    relative_note = " (today)"
+                elif d_msg == (d_today - timedelta(days=1)):
+                    relative_note = " (yesterday)"
+        except Exception:
+            pass
         
         # Get the message body (prefer textPlain over textHtml)
         body = message.get("textPlain") or message.get("textHtml") or message.get("snippet") or "No content available"
@@ -289,7 +327,7 @@ def read_gmail_message(message_id: str, config: Optional[Dict] = None) -> str:
 From: {from_addr}
 To: {to_addr}
 Subject: {subject}
-Date: {date}
+Date: {date_str}{relative_note}
 
 📝 Email Content:
 {body}
@@ -458,16 +496,77 @@ def search_gmail(query: str, max_results: int = 10, config: Optional[Dict] = Non
         return f"❌ Search failed: {str(e)}"
 
 @tool
-def check_gmail_service_status() -> str:
+def search_gmail_by_sender_today(sender: str, days_ago: int = 0, max_results: int = 5, config: Optional[Dict] = None) -> str:
     """
-    Check if the Gmail microservice is running and accessible.
+    Search Gmail for messages from a specific sender within a precise local-date window (today/yesterday).
+    Args:
+        sender: The sender email or domain (e.g., "udemy.com" or "hello@alerts.udemy.com")
+        days_ago: 0 for today, 1 for yesterday
+        max_results: Maximum number of results
+        config: internal auth and user_timezone
+    """
+    try:
+        # Determine user's timezone
+        tzname = None
+        if isinstance(config, dict):
+            tzname = config.get("user_timezone")
+        tz = ZoneInfo(tzname) if tzname else timezone.utc
+
+        now = datetime.now(tz)
+        target = (now - timedelta(days=days_ago)).date()
+        after = datetime(target.year, target.month, target.day, 0, 0, 0, tzinfo=tz)
+        before = after + timedelta(days=1)
+        # Gmail expects YYYY/MM/DD
+        after_str = after.strftime("%Y/%m/%d")
+        before_str = before.strftime("%Y/%m/%d")
+        q = f"from:{sender} after:{after_str} before:{before_str}"
+        params = {"q": q, "maxResults": max_results}
+        result = _make_gmail_request("GET", "/api/messages", params=params, config=config)
+        if result.get("error"):
+            return f"❌ Search failed: {result.get('message', result.get('error'))}"
+        msgs = result.get("messages") or []
+        return _format_search_results(q, msgs, max_results)
+    except Exception as e:
+        return f"❌ Search failed: {str(e)}"
+
+@tool
+def search_gmail_by_sender_on_date(sender: str, year: int, month: int, day: int, max_results: int = 5, config: Optional[Dict] = None) -> str:
+    """
+    Search Gmail for messages from a specific sender on an exact local calendar date.
+    """
+    try:
+        tzname = None
+        if isinstance(config, dict):
+            tzname = config.get("user_timezone")
+        tz = ZoneInfo(tzname) if tzname else timezone.utc
+        start = datetime(year, month, day, 0, 0, 0, tzinfo=tz)
+        end = start + timedelta(days=1)
+        q = f"from:{sender} after:{start.strftime('%Y/%m/%d')} before:{end.strftime('%Y/%m/%d')}"
+        params = {"q": q, "maxResults": max_results}
+        result = _make_gmail_request("GET", "/api/messages", params=params, config=config)
+        if result.get("error"):
+            return f"❌ Search failed: {result.get('message', result.get('error'))}"
+        msgs = result.get("messages") or []
+        return _format_search_results(q, msgs, max_results)
+    except Exception as e:
+        return f"❌ Search failed: {str(e)}"
+
+@tool
+def check_gmail_service_status(config: Optional[Dict] = None) -> str:
+    """
+    Check if the Gmail API endpoints are reachable via the Next.js app.
+    Uses a lightweight messages query as a health probe.
     
     Returns:
         String with service status information
     """
     try:
-        result = _make_gmail_request("GET", "/health")
-        return f"✅ Gmail service is running. Status: {result.get('status', 'unknown')}"
+        # Probe the messages endpoint with minimal result size
+        result = _make_gmail_request("GET", "/api/messages", params={"maxResults": 1}, config=config)
+        if result.get("error"):
+            details = result.get("message") or result.get("details") or result.get("error")
+            return f"❌ Gmail service check failed: {details}"
+        return "✅ Gmail service is reachable via Next.js API"
     except GmailError as e:
         return f"❌ Gmail service is not accessible: {str(e)}"
 
@@ -941,6 +1040,9 @@ GMAIL_TOOLS = [
     read_gmail_message,
     reply_to_gmail,
     search_gmail,
+    search_gmail_by_sender_today,
+    search_gmail_by_sender_on_date,
+    search_gmail_smart,
     check_gmail_service_status,
     
     # Advanced message operations
@@ -994,6 +1096,7 @@ GMAIL_TOOL_DESCRIPTIONS = {
     "read_gmail_message": "Read the full content of a specific email",
     "reply_to_gmail": "Reply to a specific email message",
     "search_gmail": "Search through emails using Gmail search syntax",
+    "search_gmail_smart": "Search emails with smart variations and common corrections",
     "check_gmail_service_status": "Check if Gmail service is running",
     
     # Advanced message operations

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAccount } from "@/providers/EmailAccountProvider";
 import { Chat } from "@/components/assistant-chat/chat";
 
@@ -52,6 +52,8 @@ export function AssistantDrawer() {
           inset: "0 0 0 auto",
         }}
       >
+        {/* Hidden title for accessibility - required by DialogContent */}
+        <DialogTitle className="sr-only">Assistant Drawer</DialogTitle>
         {/* Assistant Chat (full height within drawer) */}
         <div className="flex h-full w-full flex-col">
           <div className="border-b border-border px-4 py-3 text-sm font-medium">

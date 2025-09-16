@@ -4,7 +4,7 @@ import { memo, useEffect } from "react";
 import { resetTotalThreads, useQueueState } from "@/store/archive-queue";
 import { ProgressPanel } from "@/components/ProgressPanel";
 
-export const ArchiveProgress = memo(() => {
+export const ArchiveProgress = memo(function ArchiveProgress() {
   const { totalThreads, activeThreads } = useQueueState();
 
   // Make sure activeThreads is an object as this was causing an error.

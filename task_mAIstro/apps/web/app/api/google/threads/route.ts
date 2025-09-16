@@ -10,6 +10,12 @@ export const maxDuration = 30;
 
 export const GET = withEmailAccount(async (request) => {
   const emailAccountId = request.auth.emailAccountId;
+  
+  console.log('Gmail threads API called:', {
+    emailAccountId,
+    userId: request.auth.userId,
+    hasAuth: !!request.auth
+  });
 
   const { searchParams } = new URL(request.url);
   const limit = searchParams.get("limit");
@@ -31,7 +37,19 @@ export const GET = withEmailAccount(async (request) => {
     emailAccountId,
   });
 
-  if (!accessToken) return NextResponse.json({ error: "Account not found" });
+  console.log('Gmail token check:', {
+    hasGmail: !!gmail,
+    hasAccessToken: !!accessToken,
+    tokenPrefix: accessToken?.slice(0, 10) + '...'
+  });
+
+  if (!accessToken) {
+    console.log('No access token found - likely auth issue');
+    return NextResponse.json({ 
+      error: "Gmail access token not found. Please re-authenticate.", 
+      isKnownError: true 
+    }, { status: 401 });
+  }
 
   const threads = await getThreads({
     query,

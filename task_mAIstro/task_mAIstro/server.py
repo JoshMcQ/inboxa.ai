@@ -85,95 +85,83 @@ async def stream_run(request: RunRequest):
                 "content": msg.content
             })
         
-        # Create thread config
+        # Create thread config with a stable thread_id so the agent keeps context across turns
+        incoming_cfg = request.config.get("configurable", {}) if isinstance(request.config, dict) else {}
+        user_id = incoming_cfg.get("user_id")
+        email_acct = incoming_cfg.get("email_account_id")
+        convo_id = incoming_cfg.get("conversation_id")
+        provided_thread = incoming_cfg.get("thread_id")
+
+        stable_thread = (
+            convo_id
+            or provided_thread
+            or (f"{user_id}:{email_acct}" if user_id and email_acct else None)
+            or f"thread_{datetime.now().timestamp()}"
+        )
+
         config = {
             "configurable": {
-                **request.config.get("configurable", {}),
-                "thread_id": f"thread_{datetime.now().timestamp()}"
-            }
+                **incoming_cfg,
+                "thread_id": stable_thread,
+            },
+            "recursion_limit": 15  # Prevent infinite loops, lower than default 25
         }
         
         async def generate_stream():
-            """Generate streaming responses"""
+            """Generate streaming responses with low latency (yield per chunk)."""
             try:
                 print(f"DEBUG: Starting stream for messages: {messages}")
-                
-                # Collect all chunks first, then synthesize voice for final response only
-                all_chunks = []
-                final_response = None
-                
-                # Stream the graph execution
-                async for chunk in compiled_graph.astream(
-                    {"messages": messages}, 
-                    config=config
-                ):
+
+                last_ai_text: Optional[str] = None
+
+                async for chunk in compiled_graph.astream({"messages": messages}, config=config):
                     print(f"DEBUG chunk: {chunk}")
-                    all_chunks.append(chunk)
-                    
-                    # Extract the latest AI message 
-                    # LangGraph streaming chunks have node names as keys
+
+                    # Extract messages from this chunk
                     messages_in_chunk = []
-                    for node_name, node_data in chunk.items():
+                    for _, node_data in chunk.items():
                         if isinstance(node_data, dict) and "messages" in node_data:
                             messages_in_chunk = node_data["messages"]
                             break
-                    
-                    # Store the latest complete response for voice synthesis
+
+                    # Track final AI text so we can synthesize once at the end (optional)
                     if messages_in_chunk:
-                        final_response = messages_in_chunk
-                
-                # Now process all chunks for streaming, but only synthesize voice for final response
-                audio_base64 = None
-                
-                for i, chunk in enumerate(all_chunks):
-                    messages_in_chunk = []
-                    for node_name, node_data in chunk.items():
-                        if isinstance(node_data, dict) and "messages" in node_data:
-                            messages_in_chunk = node_data["messages"]
-                            break
-                    
-                    # Only synthesize voice for the very last chunk with a complete AI response
-                    is_final_chunk = (i == len(all_chunks) - 1)
-                    if request.enable_voice and is_final_chunk and final_response:
-                        # Get the last message from the assistant
-                        last_message = final_response[-1]
-                        if hasattr(last_message, 'content') and last_message.content:
-                            # Synthesize voice for AI responses only
-                            if getattr(last_message, 'role', None) == 'assistant' or \
-                               (hasattr(last_message, 'type') and last_message.type == 'ai'):
-                                text_content = str(last_message.content)
-                                if text_content.strip():
-                                    print(f"DEBUG: Synthesizing voice for final response: {text_content[:100]}...")
-                                    audio_base64 = synthesize_response(text_content)
-                    
-                    # Convert LangChain messages to JSON-serializable format
+                        last = messages_in_chunk[-1]
+                        if hasattr(last, 'content') and hasattr(last, 'type') and getattr(last, 'type', None) == 'ai':
+                            last_ai_text = str(getattr(last, 'content', '') or '')
+
+                    # Convert to serializable message list
                     serializable_messages = []
                     for msg in messages_in_chunk:
                         if hasattr(msg, 'content') and hasattr(msg, 'type'):
-                            # LangChain message object
                             role = "assistant" if msg.type == "ai" else "human" if msg.type == "human" else "system"
-                            serializable_messages.append({
-                                "role": role,
-                                "content": msg.content
-                            })
+                            serializable_messages.append({"role": role, "content": msg.content})
                         elif isinstance(msg, dict):
-                            # Already serializable
                             serializable_messages.append(msg)
-                    
-                    # Format response to match expected format
+
                     response_data = {
                         "messages": serializable_messages,
                         "timestamp": datetime.now().isoformat(),
-                        "audio_base64": audio_base64,
-                        "voice_enabled": request.enable_voice and is_voice_enabled()
+                        "audio_base64": None,  # audio synthesized at end only
+                        "voice_enabled": request.enable_voice and is_voice_enabled(),
                     }
-                    
-                    # Yield JSON line format
+                    # Yield immediately for low latency
                     yield f"{json.dumps(response_data)}\n"
-                    
-                    # Small delay to make streaming visible
-                    await asyncio.sleep(0.1)
-                    
+
+                # After stream completes, optionally synthesize voice for the final AI text
+                if request.enable_voice and is_voice_enabled() and last_ai_text:
+                    try:
+                        audio_base64 = synthesize_response(last_ai_text)
+                        voice_response = {
+                            'messages': [{ 'role': 'assistant', 'content': last_ai_text }],
+                            'timestamp': datetime.now().isoformat(),
+                            'audio_base64': audio_base64,
+                            'voice_enabled': True
+                        }
+                        yield f"{json.dumps(voice_response)}\n"
+                    except Exception as ve:
+                        print(f"Voice synthesis failed: {ve}")
+
             except Exception as e:
                 import traceback
                 print(f"ERROR: {e}")

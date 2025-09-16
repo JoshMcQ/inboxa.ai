@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArchiveIcon, PenLineIcon } from "lucide-react";
+import { ArchiveIcon, PenLineIcon, SparklesIcon, SearchIcon } from "lucide-react";
 import { useAtomValue } from "jotai";
 import {
   CommandDialog,
@@ -79,11 +79,12 @@ export function CommandK() {
 
   // Back-compat and resilience:
   // Normalize items so CommandK doesn't break if useNavigation shape changes.
+  const navAny = navigation as any;
   const allNavItems =
     [
-      ...(navigation?.assistantItems ?? []),
-      ...(navigation?.cleanItems ?? []),
-      ...(navigation?.mainItems ?? []),
+      ...(navAny?.assistantItems ?? []),
+      ...(navAny?.cleanItems ?? []),
+      ...(navAny?.mainItems ?? []),
     ]
       // de-dup by name+href
       .filter(Boolean)
@@ -124,9 +125,39 @@ export function CommandK() {
           },
         }}
       >
-        <CommandInput placeholder="Type a command..." />
+        <CommandInput placeholder="Search or ask AI anything..." className="command-bar" />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="AI Prompts">
+            <CommandItem
+              onSelect={() => {
+                // Handle AI prompt
+                setOpen(false);
+              }}
+            >
+              <SparklesIcon className="mr-2 h-4 w-4" />
+              <span>Summarize today's inbox</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => {
+                // Handle AI prompt
+                setOpen(false);
+              }}
+            >
+              <SparklesIcon className="mr-2 h-4 w-4" />
+              <span>Draft replies to urgent emails</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => {
+                // Handle AI prompt
+                setOpen(false);
+              }}
+            >
+              <SparklesIcon className="mr-2 h-4 w-4" />
+              <span>Sweep promotional emails</span>
+            </CommandItem>
+          </CommandGroup>
+          
           <CommandGroup heading="Actions">
             {threadId && (
               <CommandItem

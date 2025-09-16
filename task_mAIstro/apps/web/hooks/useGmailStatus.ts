@@ -8,19 +8,29 @@ import { useEffect, useMemo, useState } from "react";
  * - Defensive against unknown shapes; falls back gracefully
  * - Optional polling via options.refreshMs (default: 60s)
  */
-export function useGmailStatus(options?: { refreshMs?: number }) {
+export function useGmailStatus(options?: { refreshMs?: number; emailAccountId?: string }) {
   const [label, setLabel] = useState<string>("Gmail · syncing…");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const refreshMs = options?.refreshMs ?? 60000;
+  const emailAccountId = options?.emailAccountId;
 
   async function fetchStatus() {
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/user/email-account", { method: "GET" });
+      if (!emailAccountId) {
+        throw new Error("Email account ID is required");
+      }
+
+      const res = await fetch("/api/user/email-account", { 
+        method: "GET",
+        headers: {
+          "X-Email-Account-ID": emailAccountId,
+        },
+      });
       if (!res.ok) {
         throw new Error(`status ${res.status}`);
       }
@@ -51,7 +61,7 @@ export function useGmailStatus(options?: { refreshMs?: number }) {
     const id = setInterval(fetchStatus, refreshMs);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshMs]);
+  }, [refreshMs, emailAccountId]);
 
   return useMemo(
     () => ({ label, loading, error, refresh: fetchStatus }),

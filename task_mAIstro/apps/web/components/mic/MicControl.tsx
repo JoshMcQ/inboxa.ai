@@ -1,40 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { VoiceCommand } from "@/components/VoiceCommand";
+import { ElevenLabsWidget } from "@/components/ElevenLabsWidget";
 
 /**
- * MicControl
- * - Wrap any element as the trigger (DialogTrigger asChild)
- * - Opens the VoiceCommand capture dialog
- * - Keeps implementation simple so we can later add device picker, live state, etc.
+ * MicControl - Now using ElevenLabs Conversational AI Widget
+ * - Renders the ElevenLabs widget for natural voice conversation
+ * - Passes emailAccountId context for email operations
  */
-export function MicControl({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-
+export function MicControl({ 
+  children, 
+  emailAccountId,
+  userId 
+}: { 
+  children: React.ReactNode;
+  emailAccountId?: string;
+  userId?: string;
+}) {
+  // The ElevenLabs widget replaces the old dialog-based approach
+  // It renders as a floating widget that users can interact with
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Voice</DialogTitle>
-        </DialogHeader>
-        <div className="py-2">
-          <VoiceCommand
-            onResponse={() => {
-              // Close after a successful voice command round-trip
-              setOpen(false);
-            }}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      {/* The children element is no longer needed as a trigger since the widget is always available */}
+      <ElevenLabsWidget emailAccountId={emailAccountId} userId={userId} />
+    </>
   );
 }

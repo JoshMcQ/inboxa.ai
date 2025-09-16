@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "/opt/homebrew/lib/node_modules/@playwright/mcp/node_modules/playwright-core/.local-browsers"
+      }
+    },
+    "inboxa-mcp": {
+      "command": "node",
+      "args": ["apps/mcp-server/build/index.js"],
+      "env": {
+        "API_KEY": ""
+      }
+    },
+    "unsubscriber": {
+      "command": "node", 
+      "args": ["apps/unsubscriber/build/main.js"],
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "",
+        "CORS_ORIGIN": "http://localhost:3002"
+      }
+    }
+  }
+}

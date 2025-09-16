@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -46,7 +46,7 @@ export function TopNav({ trigger }: { trigger: React.ReactNode }) {
   const [micState, setMicState] = useState<"idle" | "listening" | "transcribing" | "muted">("idle");
 
   // Gmail status pill
-  const gmail = useGmailStatus({ refreshMs: 60_000 });
+  const gmail = useGmailStatus({ refreshMs: 60_000, emailAccountId });
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -113,7 +113,7 @@ export function TopNav({ trigger }: { trigger: React.ReactNode }) {
         </Button>
 
         {/* Persistent Mic (icon button with state dot) */}
-        <MicControl>
+        <MicControl emailAccountId={emailAccountId}>
           <Button variant="ghost" size="icon" aria-label="Voice" title="Hold ⌘ to talk" className="relative">
             <MicIcon className="h-5 w-5" />
             <span

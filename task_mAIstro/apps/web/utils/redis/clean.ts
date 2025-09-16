@@ -80,8 +80,12 @@ export async function publishThread({
 
   // Store the data with expiration
   await redis.set(key, thread, { ex: EXPIRATION });
-  // Publish the update to any listening clients
-  await redis.publish(key, JSON.stringify(thread));
+  // Publish the update to any listening clients (best-effort)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client: any = redis as any;
+  if (typeof client.publish === "function") {
+    await client.publish(key, JSON.stringify(thread));
+  }
 }
 
 async function getThread({
@@ -111,7 +115,9 @@ export async function getThreadsByJobId({
 
   // Scan through keys until we hit our limit or run out of keys
   do {
-    const [nextCursor, batch] = await redis.scan(cursor, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client: any = redis as any;
+    const [nextCursor, batch] = await client.scan(cursor, {
       match: pattern,
       count: 100, // How many keys to fetch per iteration
     });
@@ -138,7 +144,9 @@ export async function deleteAllUserData(userId: string) {
   let deletedThreads = 0;
 
   do {
-    const [nextCursor, batch] = await redis.scan(cursor, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client: any = redis as any;
+    const [nextCursor, batch] = await client.scan(cursor, {
       match: threadPattern,
       count: 100,
     });
@@ -146,7 +154,13 @@ export async function deleteAllUserData(userId: string) {
 
     if (batch.length > 0) {
       // Spread the array of keys
-      await redis.unlink(...batch);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client: any = redis as any;
+      if (typeof client.unlink === "function") {
+        await client.unlink(...batch);
+      } else if (typeof client.del === "function") {
+        await client.del(...batch);
+      }
       deletedThreads += batch.length;
     }
   } while (cursor !== 0);

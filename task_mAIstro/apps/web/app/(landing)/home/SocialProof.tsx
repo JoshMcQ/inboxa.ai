@@ -1,57 +1,103 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { TrophyIcon, UsersIcon, ShieldCheckIcon, ZapIcon } from "lucide-react";
 
 const companies = [
-  { name: "Google", logo: "Google" },
-  { name: "Microsoft", logo: "Microsoft" },
-  { name: "Amazon", logo: "Amazon" },
-  { name: "Meta", logo: "Meta" },
-  { name: "Apple", logo: "Apple" },
-  { name: "Netflix", logo: "Netflix" },
+  "TechFlow Industries", "StartupLab", "InnovateCorp", "CloudScale Systems", 
+  "Global Dynamics", "Revenue Solutions", "DataStream Inc", "NextGen Labs"
 ];
 
-const stats = [
-  { label: "500+ hours saved weekly", value: "500+" },
-  { label: "99.9% uptime", value: "99.9%" },
-  { label: "Enterprise-grade security", value: "Enterprise" },
+const achievements = [
+  { 
+    icon: UsersIcon, 
+    value: "10,000+", 
+    label: "Active Users",
+    color: "from-blue-500 to-cyan-500"
+  },
+  { 
+    icon: ZapIcon, 
+    value: "2.5M+", 
+    label: "Emails Processed",
+    color: "from-green-500 to-teal-500"
+  },
+  { 
+    icon: TrophyIcon, 
+    value: "4.9/5", 
+    label: "Average Rating",
+    color: "from-yellow-500 to-orange-500"
+  },
+  { 
+    icon: ShieldCheckIcon, 
+    value: "99.9%", 
+    label: "Uptime Guarantee",
+    color: "from-purple-500 to-pink-500"
+  }
 ];
 
 export function SocialProof() {
   return (
-    <section className="bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 bg-gradient-to-br from-slate-50 to-white relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute top-0 left-1/3 w-72 h-72 bg-gradient-to-r from-primary/5 to-teal-500/5 rounded-full blur-3xl" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center"
+          className="text-center mb-12"
         >
-          <p className="text-base text-gray-600 font-medium mb-8">Trusted by teams at</p>
+          <p className="text-muted-foreground font-medium mb-8">
+            Trusted by professionals at leading companies
+          </p>
           
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-8 items-center mb-12">
-            {companies.map((company) => (
-              <div key={company.name} className="flex justify-center">
-                <div className="text-gray-400 text-lg font-semibold">
-                  {company.logo}
+          {/* Company Names */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {companies.map((company, index) => (
+              <motion.div
+                key={company}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-card/60 backdrop-blur-sm rounded-lg p-4 border border-border/50 hover:border-primary/20 transition-all duration-300"
+              >
+                <div className="text-muted-foreground font-medium text-sm">
+                  {company}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-gray-200">
-            {stats.map((stat, index) => (
+          {/* Achievement Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {achievements.map((achievement, index) => (
               <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
+                key={achievement.label}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="text-center"
+                className="group"
               >
-                <div className="text-3xl font-bold text-[#1a365d]">{stat.value}</div>
-                <div className="text-sm text-gray-600 mt-1">{stat.label}</div>
+                <div className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 border border-border/50 hover:border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 text-center">
+                  {/* Icon */}
+                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${achievement.color} text-white mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <achievement.icon className="h-6 w-6" />
+                  </div>
+                  
+                  {/* Value */}
+                  <div className={`text-3xl font-bold bg-gradient-to-r ${achievement.color} bg-clip-text text-transparent mb-2`}>
+                    {achievement.value}
+                  </div>
+                  
+                  {/* Label */}
+                  <div className="text-muted-foreground text-sm font-medium">
+                    {achievement.label}
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>

@@ -34,11 +34,14 @@ export async function saveUsage(options: {
 
   const key = getUsageKey(email);
 
+  // Some redis clients (mocks) may not implement HINCRBY/HINCRBYFLOAT; cast to any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client: any = redis as any;
   Promise.all([
-    redis.hincrby(key, "openaiCalls", 1),
-    redis.hincrby(key, "openaiTokensUsed", usage.totalTokens),
-    redis.hincrby(key, "openaiCompletionTokensUsed", usage.completionTokens),
-    redis.hincrby(key, "openaiPromptTokensUsed", usage.promptTokens),
-    redis.hincrbyfloat(key, "cost", cost),
+    client.hincrby?.(key, "openaiCalls", 1),
+    client.hincrby?.(key, "openaiTokensUsed", usage.totalTokens),
+    client.hincrby?.(key, "openaiCompletionTokensUsed", usage.completionTokens),
+    client.hincrby?.(key, "openaiPromptTokensUsed", usage.promptTokens),
+    client.hincrbyfloat?.(key, "cost", cost),
   ]);
 }

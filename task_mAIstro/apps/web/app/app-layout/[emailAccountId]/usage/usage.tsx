@@ -10,8 +10,8 @@ import { isPremium } from "@/utils/premium";
 
 export function Usage(props: {
   usage?: {
-    openaiCalls: number;
-    openaiTokensUsed: number;
+    openaiCalls?: number;
+    openaiTokensUsed?: number;
   } | null;
 }) {
   const { premium, isLoading, error } = usePremium();

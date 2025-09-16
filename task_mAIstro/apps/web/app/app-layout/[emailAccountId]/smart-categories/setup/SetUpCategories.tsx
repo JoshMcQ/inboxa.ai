@@ -233,17 +233,17 @@ function CategoryCard({
       </div>
       {isEnabled ? (
         <div className="flex gap-1">
-          <Button size="iconSm" variant="ghost" onClick={onEdit}>
+          <Button size="icon-sm" variant="ghost" onClick={onEdit}>
             <PenIcon className="size-4" />
             <span className="sr-only">Edit</span>
           </Button>
-          <Button size="iconSm" variant="ghost" onClick={onRemove}>
+          <Button size="icon-sm" variant="ghost" onClick={onRemove}>
             <TrashIcon className="size-4" />
             <span className="sr-only">Remove</span>
           </Button>
         </div>
       ) : (
-        <Button size="iconSm" variant="outline" onClick={onAdd}>
+        <Button size="icon-sm" variant="outline" onClick={onAdd}>
           <PlusIcon className="size-4" />
           <span className="sr-only">Add</span>
         </Button>

@@ -15,12 +15,15 @@ import {
   CogIcon,
   CrownIcon,
   FileIcon,
+  HomeIcon,
   InboxIcon,
   type LucideIcon,
   MailsIcon,
   MessagesSquareIcon,
+  MicIcon,
   PenIcon,
   PersonStandingIcon,
+  PuzzleIcon,
   RatioIcon,
   SendIcon,
   SparklesIcon,
@@ -62,17 +65,25 @@ type NavItem = {
   hideInMail?: boolean;
 };
 
+const AssistantIcon = () => {
+  return (
+    <div className="relative">
+      <SparklesIcon className="size-4" />
+    </div>
+  );
+};
+
 export const useNavigation = () => {
   const showCleaner = useCleanerEnabled();
   const { emailAccountId } = useAccount();
 
-  // Main app items as per blueprint
+  // Main app items as per new IA structure
   const mainItems: NavItem[] = useMemo(
     () => [
       {
-        name: "Assistant",
-        href: prefixPath(emailAccountId, "/assistant"),
-        icon: SparklesIcon,
+        name: "Home",
+        href: prefixPath(emailAccountId, "/home"),
+        icon: HomeIcon,
       },
       {
         name: "Mail",
@@ -80,9 +91,19 @@ export const useNavigation = () => {
         icon: InboxIcon,
       },
       {
-        name: "Unsubscribe",
+        name: "Planner",
+        href: prefixPath(emailAccountId, "/planner"),
+        icon: BookIcon,
+      },
+      {
+        name: "Senders",
         href: prefixPath(emailAccountId, "/unsubscribe"),
-        icon: MailsIcon,
+        icon: Users2Icon,
+      },
+      {
+        name: "Automations",
+        href: prefixPath(emailAccountId, "/automation"),
+        icon: BrushIcon,
       },
       {
         name: "Insights",
@@ -90,9 +111,9 @@ export const useNavigation = () => {
         icon: BarChartBigIcon,
       },
       {
-        name: "Automations",
-        href: prefixPath(emailAccountId, "/automation"),
-        icon: BrushIcon,
+        name: "Connectors",
+        href: prefixPath(emailAccountId, "/connectors"),
+        icon: PuzzleIcon,
       },
     ],
     [emailAccountId],

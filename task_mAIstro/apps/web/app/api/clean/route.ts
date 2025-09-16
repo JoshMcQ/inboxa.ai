@@ -283,13 +283,17 @@ function getPublish({
   };
 }
 
-export const POST = withError(
-  verifySignatureAppRouter(async (request: Request) => {
-    const json = await request.json();
-    const body = cleanThreadBody.parse(json);
+async function rawPost(request: Request) {
+  const json = await request.json();
+  const body = cleanThreadBody.parse(json);
 
-    await cleanThread(body);
+  await cleanThread(body);
 
-    return NextResponse.json({ success: true });
-  }),
-);
+  return NextResponse.json({ success: true });
+}
+
+export const POST = (request: Request) => {
+  const verified = verifySignatureAppRouter(rawPost);
+  const wrapped = withError(verified as any);
+  return wrapped(request as any, { params: Promise.resolve({}) } as any);
+};

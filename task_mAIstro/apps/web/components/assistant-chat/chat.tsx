@@ -150,7 +150,7 @@ function ChatInner({
 
   const isMobile = useIsMobile();
 
-  const chatPanel = <ChatUI chat={chat} />;
+  const chatPanel = <ChatUI chat={chat} emailAccountId={emailAccountId} />;
 
   return (
     <ChatProvider setInput={chat.setInput}>
@@ -177,7 +177,13 @@ function ChatInner({
   );
 }
 
-function ChatUI({ chat }: { chat: ReturnType<typeof useChat> }) {
+function ChatUI({ 
+  chat, 
+  emailAccountId 
+}: { 
+  chat: ReturnType<typeof useChat>;
+  emailAccountId: string;
+}) {
   const {
     messages,
     setMessages,
@@ -202,9 +208,9 @@ function ChatUI({ chat }: { chat: ReturnType<typeof useChat> }) {
           )}
 
           <div className="flex items-center gap-1">
+            <VoiceCommandButton setInput={setInput} emailAccountId={emailAccountId} />
             <NewChatButton />
             <ExamplesDialog setInput={setInput} />
-            <VoiceCommandButton setInput={setInput} />
             <ChatHistoryDropdown />
             <OpenArtifactButton />
           </div>
@@ -271,7 +277,13 @@ function OpenArtifactButton() {
   );
 }
 
-function VoiceCommandButton({ setInput }: { setInput: (input: string) => void }) {
+function VoiceCommandButton({ 
+  setInput, 
+  emailAccountId 
+}: { 
+  setInput: (input: string) => void;
+  emailAccountId: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleVoiceResponse = (response: string) => {
@@ -281,20 +293,20 @@ function VoiceCommandButton({ setInput }: { setInput: (input: string) => void })
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip content="Voice command">
+      <Tooltip content="🎤 Voice Assistant - New!">
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="default" size="icon" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
             <MicIcon className="size-5" />
-            <span className="sr-only">Voice Command</span>
+            <span className="sr-only">Voice Assistant</span>
           </Button>
         </DialogTrigger>
       </Tooltip>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Voice Command</DialogTitle>
+          <DialogTitle>🎤 InboxA.AI Voice Assistant</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center space-y-4 py-4">
-          <VoiceCommand onResponse={handleVoiceResponse} />
+          <VoiceCommand onResponse={handleVoiceResponse} emailAccountId={emailAccountId} />
         </div>
       </DialogContent>
     </Dialog>

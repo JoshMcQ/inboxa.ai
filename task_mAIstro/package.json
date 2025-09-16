@@ -35,7 +35,20 @@
     "overrides": {
       "@types/react": "19.0.10",
       "@types/react-dom": "19.0.4"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@prisma/client",
+      "@prisma/engines",
+      "@sentry/cli",
+      "@swc/core",
+      "core-js",
+      "core-js-pure",
+      "esbuild",
+      "prisma",
+      "scrollmirror",
+      "sharp"
+    ]
   },
   "dependencies": {
     "glob": "^11.0.3"

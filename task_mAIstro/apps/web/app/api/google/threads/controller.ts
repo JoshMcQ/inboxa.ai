@@ -51,6 +51,14 @@ export async function getThreads({
     });
 
   const threadIds = gmailThreads?.map((t) => t.id).filter(isDefined) || [];
+  
+  console.log('Gmail API Debug:', {
+    query: getQuery(),
+    labelIds: query.labelId ? [query.labelId] : getLabelIds(query.type),
+    gmailThreadsCount: gmailThreads?.length || 0,
+    threadIds: threadIds.length,
+    type: query.type
+  });
 
   const [threads, plans] = await Promise.all([
     getThreadsBatch(threadIds, accessToken), // may have been faster not using batch method, but doing 50 getMessages in parallel
@@ -93,10 +101,19 @@ export async function getThreads({
     }) || [],
   );
 
-  return {
+  const result = {
     threads: threadsWithMessages.filter(isDefined),
     nextPageToken,
   };
+  
+  console.log('Gmail API Result:', {
+    threadsCount: result.threads.length,
+    hasNextPageToken: !!result.nextPageToken,
+    firstThreadId: result.threads[0]?.id,
+    firstThreadSnippet: result.threads[0]?.snippet?.slice(0, 100)
+  });
+  
+  return result;
 }
 
 function getLabelIds(type?: string | null) {

@@ -1,12 +1,11 @@
 import { PermissionsCheck } from "@/app/app-layout/[emailAccountId]/PermissionsCheck";
-import { BulkUnsubscribe } from "./BulkUnsubscribe";
+import { SendersIntelligence } from "./SendersIntelligence";
 
-export default async function BulkUnsubscribePage() {
-  // await checkAndRedirectForUpgrade();
+export default async function SendersPage() {
   return (
     <>
       <PermissionsCheck />
-      <BulkUnsubscribe />
+      <SendersIntelligence />
     </>
   );
 }

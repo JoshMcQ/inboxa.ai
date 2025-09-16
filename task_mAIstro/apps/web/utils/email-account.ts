@@ -17,3 +17,27 @@ export async function checkUserOwnsEmailAccount({
   });
   if (!emailAccount) notFound();
 }
+
+// Fetch an email account for a given user and include linked auth tokens needed for Gmail API
+export async function getEmailAccountFromParams(
+  { emailAccountId }: { emailAccountId: string },
+  userId: string,
+) {
+  const emailAccount = await prisma.emailAccount.findFirst({
+    where: { id: emailAccountId, userId },
+    select: {
+      id: true,
+      userId: true,
+      account: {
+        select: {
+          refresh_token: true,
+          access_token: true,
+          expires_at: true,
+        },
+      },
+    },
+  });
+
+  if (!emailAccount) notFound();
+  return emailAccount;
+}

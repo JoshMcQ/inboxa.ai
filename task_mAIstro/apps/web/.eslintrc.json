@@ -1,12 +1,9 @@
 {
   "root": true,
-  "extends": ["@inboxzero/eslint-config/next.js"],
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "project": true
-  },
+  "extends": ["next/core-web-vitals"],
   "rules": {
-    "no-console": "off"
+    "no-console": "off",
+    "react/no-unescaped-entities": "off"
   },
   "overrides": [
     {

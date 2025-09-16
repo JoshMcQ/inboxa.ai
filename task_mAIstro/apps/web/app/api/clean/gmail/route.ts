@@ -137,13 +137,18 @@ async function saveToDatabase({
   });
 }
 
-export const POST = withError(
-  verifySignatureAppRouter(async (request: NextRequest) => {
-    const json = await request.json();
-    const body = cleanGmailSchema.parse(json);
+async function rawPost(request: NextRequest) {
+  const json = await request.json();
+  const body = cleanGmailSchema.parse(json);
 
-    await performGmailAction(body);
+  await performGmailAction(body);
 
-    return NextResponse.json({ success: true });
-  }),
-);
+  return NextResponse.json({ success: true });
+}
+
+export const POST = (request: NextRequest) => {
+  // Lazily construct the verified handler to avoid build-time env evaluation
+  const verified = verifySignatureAppRouter(rawPost);
+  const wrapped = withError(verified);
+  return wrapped(request as any, { params: Promise.resolve({}) } as any);
+};

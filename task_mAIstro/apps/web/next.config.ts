@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/",
-        destination: "/automation",
+        destination: "/app-layout/redirects/automation",
         has: [
           {
             type: "cookie",
@@ -60,7 +60,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/",
-        destination: "/setup",
+        destination: "/app-layout/redirects/setup",
         has: [
           {
             type: "cookie",
@@ -71,7 +71,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/",
-        destination: "/setup",
+        destination: "/app-layout/redirects/setup",
         has: [
           {
             type: "cookie",
@@ -82,7 +82,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/",
-        destination: "/setup",
+        destination: "/app-layout/redirects/setup",
         has: [
           {
             type: "cookie",
@@ -214,8 +214,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Next.js needs these
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+              // Next.js needs these + ElevenLabs widget needs blob: and data: for audio worklets
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob: data:",
               // Needed for Tailwind/Shadcn
               "style-src 'self' 'unsafe-inline' https:",
               // Add this line to allow data: fonts

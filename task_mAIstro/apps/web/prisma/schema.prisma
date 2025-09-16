@@ -141,6 +141,7 @@ model EmailAccount {
   knowledge      Knowledge[]
   chats          Chat[]
   digests        Digest[]
+  plannerTasks   PlannerTask[]
 
   @@index([lastSummaryEmailAt])
 }
@@ -851,4 +852,62 @@ enum DigestStatus {
   PROCESSING
   SENT
   FAILED
+}
+
+// InboxA.AI - Visual Voice-Native Email OS Models
+model AgendaItem {
+  id            String   @id @default(cuid())
+  userId        String
+  // Source of truth
+  source        String   // 'gmail' | 'calendar' | 'slack' | 'notion' | 'system'
+  sourceId      String   // e.g. Gmail messageId, Google event id
+  // Content
+  title         String
+  subtitle      String?  // e.g., label, sender, location
+  dueAt         DateTime?
+  status        String   @default("open") // 'open' | 'done' | 'snoozed' | 'muted'
+  priority      Int      @default(0)      // 2=urgent,1=high,0=normal,-1=low
+  actionNeeded  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, source, sourceId]) // prevent dupes
+  @@index([userId])
+  @@index([sourceId])
+}
+
+model AgentEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   // 'search' | 'select' | 'open' | 'type' | 'send' | 'delete' | 'label' | 'archive'
+  targetId  String?  // gmail messageId, threadId, etc.
+  payload   Json?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+}
+
+model PlannerTask {
+  id                   String    @id @default(cuid())
+  emailAccountId       String
+  title                String
+  type                 String    // 'follow-up' | 'waiting-on' | 'scheduled-send' | 'meeting' | 'reminder' | 'review'
+  priority             String    // 'high' | 'medium' | 'low'
+  status               String    @default("pending") // 'pending' | 'in-progress' | 'completed' | 'cancelled'
+  dueDate              DateTime
+  linkedEmailId        String?
+  linkedThreadSubject  String?
+  estimatedDuration    Int?      // minutes
+  createdBy            String    @default("Manual") // 'Voice Command' | 'Manual' | 'Auto-rule R-XX'
+  assignee             String?
+  completedAt          DateTime?
+  metadata             Json?     // voiceCommand, confidence, etc.
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+
+  @@index([emailAccountId, status])
+  @@index([dueDate])
+  @@index([priority, status])
 }

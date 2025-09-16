@@ -146,6 +146,33 @@ async function authMiddleware(
 async function emailAccountMiddleware(
   req: NextRequest,
 ): Promise<RequestWithEmailAccount | Response> {
+  // Check for internal authentication header first
+  const internalAuth = req.headers.get("X-Internal-Auth");
+  if (internalAuth) {
+    try {
+      const authData = JSON.parse(internalAuth);
+      const { userId, emailAccountId, email } = authData;
+      
+      if (!userId || !emailAccountId || !email) {
+        return NextResponse.json(
+          { error: "Invalid internal auth data", isKnownError: true },
+          { status: 403 },
+        );
+      }
+      
+      // Create a new request with email account info
+      const emailAccountReq = req.clone() as RequestWithEmailAccount;
+      emailAccountReq.auth = { userId, emailAccountId, email };
+      return emailAccountReq;
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Invalid internal auth format", isKnownError: true },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Fall back to regular NextAuth session-based authentication
   const authReq = await authMiddleware(req);
   if (authReq instanceof Response) return authReq;
 

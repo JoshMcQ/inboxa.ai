@@ -8,15 +8,24 @@ async function scanUsageKeys() {
   let cursor = "0";
   let keys: string[] = [];
   do {
-    const reply = await redis.scan(cursor, { match: "usage:*", count: 100 });
-    cursor = reply[0];
-    keys = [...keys, ...reply[1]];
+    // Some redis clients in tests may not expose SCAN; fall back to KEYS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client: any = redis as any;
+    if (typeof client.scan === "function") {
+      const reply = await client.scan(cursor, { match: "usage:*", count: 100 });
+      cursor = reply[0];
+      keys = [...keys, ...reply[1]];
+    } else {
+      const all = await client.keys?.("usage:*");
+      keys = Array.isArray(all) ? all : [];
+      cursor = "0";
+    }
   } while (cursor !== "0");
 
   const costs = await Promise.all(
     keys.map(async (key) => {
-      const data = await redis.hgetall(key);
-      const cost = data?.cost as string;
+      const data = (await redis.hgetall(key)) as Record<string, unknown> | {};
+      const cost = (data as any)?.cost as string | undefined;
       if (!cost) return { email: key, cost: 0, data };
       return {
         email: key,

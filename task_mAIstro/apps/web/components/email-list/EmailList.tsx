@@ -465,6 +465,12 @@ export function EmailList({
                   });
                 };
 
+                // Use real data from thread properties (tolerate missing fields)
+                const t: any = thread as any;
+                const hasSearchMatch = Boolean(t.searchMatch);
+                const isPendingDelete = Boolean(t.isPendingDelete);
+                const isPendingUnsubscribe = Boolean(t.isPendingUnsubscribe);
+
                 return (
                   <EmailListItem
                     key={thread.id}
@@ -490,6 +496,9 @@ export function EmailList({
                     rejectPlan={rejectPlan}
                     executingPlan={executingPlan[thread.id]}
                     rejectingPlan={rejectingPlan[thread.id]}
+                    hasSearchMatch={hasSearchMatch}
+                    isPendingDelete={isPendingDelete}
+                    isPendingUnsubscribe={isPendingUnsubscribe}
                     refetch={refetch}
                   />
                 );

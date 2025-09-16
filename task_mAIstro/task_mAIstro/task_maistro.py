@@ -9,7 +9,7 @@ from typing import Literal, Optional, TypedDict
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import merge_message_runs
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 
 from langchain_openai import ChatOpenAI
 
@@ -153,8 +153,13 @@ class UpdateMemory(TypedDict):
     """ Decision on what memory type to update. Use only when specifically needed to update user info, todos, or handle emails. """
     update_type: Literal['user', 'todo', 'instructions', 'email', 'gmail']
 
-# Initialize the model with Gmail tools and voice commands
-model = ChatOpenAI(model="gpt-4o", temperature=0)
+# Initialize the model with Gmail tools and voice commands (fast default, overridable via env)
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+try:
+    model = ChatOpenAI(model=MODEL_NAME, temperature=0)
+except Exception:
+    # Fallback if the specified model isn't available
+    model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 model_with_tools = model.bind_tools(GMAIL_TOOLS + [UpdateMemory, process_voice_command], parallel_tool_calls=False)
 
 ## Create the Trustcall extractors for updating the user profile and ToDo list
@@ -201,6 +206,13 @@ Here are your instructions for reasoning about the user's messages:
 
 2. First, check if the user is asking for Gmail functionality:
 - Use the appropriate Gmail tools for email operations (reading, sending, searching, archiving, etc.)
+- If `hints` are provided in config (e.g., `sender_hint`, `after_date`, `before_date`), prefer precise searches using those windows:
+  - Use `search_gmail_by_sender_today`/`search_gmail_by_sender_on_date` when applicable, or build an exact `after:YYYY/MM/DD before:YYYY/MM/DD` query with `from:sender_hint`.
+  - If no results, try a quoted keyword search using the hint within the same date window.
+- Prefer `search_gmail_smart` for ambiguous queries without hints; fall back to `search_gmail` with precise operators.
+- NEVER call `send_gmail` unless the user explicitly asks to send an email. For queries like "find", "read", "summarize", or "what was the email", do not attempt to send or draft.
+- When time expressions appear (e.g. "yesterday", "today", "last week"), convert them to Gmail date operators using the user's timezone. For example, for "yesterday" use an exact window with `after:YYYY/MM/DD before:YYYY/MM/DD`.
+- After listing search results, ALWAYS call `read_gmail_message(<Message ID>)` on the top matching result to extract full content and headers (including date).
 - Gmail tools are available for: sending emails, reading messages, searching, managing threads, labels, and all email operations
 - Always check Gmail service status first if Gmail operations fail
 
@@ -227,7 +239,9 @@ Here are your instructions for reasoning about the user's messages:
    - Gmail tools only when user asks for specific email operations
    - process_voice_command only for voice-specific requests
 
-8. Respond naturally and conversationally, especially for voice interactions."""
+8. Respond naturally and conversationally, especially for voice interactions.
+9. For voice responses, keep the spoken content concise (aim < 1200 characters). Prefer a clear summary with the key fields (From, Subject, Date) and a short digest of the body. Offer to "read the full email" if the user wants the entire content.
+"""
 
 # Trustcall instruction
 TRUSTCALL_INSTRUCTION = """Reflect on following interaction. 
@@ -248,6 +262,74 @@ Your current instructions are:
 <current_instructions>
 {current_instructions}
 </current_instructions>"""
+
+## Helper functions
+
+def clean_message_history(messages):
+    """Clean and deduplicate message history to prevent API errors"""
+    if not messages:
+        return []
+
+    cleaned = []
+    seen_content = set()
+    tool_call_tracker = {}  # Track which tool calls have been executed
+
+    for msg in messages:
+        msg_type = getattr(msg, 'type', None)
+        msg_content = getattr(msg, 'content', '')
+
+        # Special handling for AI messages with tool calls
+        if msg_type == 'ai' and hasattr(msg, 'tool_calls') and getattr(msg, 'tool_calls', None):
+            # Create a hash based on tool calls, not just content
+            tool_calls_str = str([(tc.get('name', ''), tc.get('args', {})) for tc in msg.tool_calls])
+            content_hash = f"{msg_type}:tool_calls:{tool_calls_str}"
+        else:
+            # Create a content hash for deduplication
+            content_hash = f"{msg_type}:{str(msg_content)[:100]}"
+
+        # Skip duplicate messages
+        if content_hash in seen_content:
+            continue
+
+        seen_content.add(content_hash)
+
+        # For AI messages with tool calls, track which calls have been made
+        if msg_type == 'ai' and hasattr(msg, 'tool_calls') and getattr(msg, 'tool_calls', None):
+            for tc in msg.tool_calls:
+                tc_id = tc.get('id') if isinstance(tc, dict) else getattr(tc, 'id', None)
+                if tc_id:
+                    tool_call_tracker[tc_id] = tc
+
+        # For tool messages, ensure they have proper preceding AI messages with tool_calls
+        if msg_type == 'tool':
+            tool_call_id = getattr(msg, 'tool_call_id', None)
+
+            # Check if this tool call ID exists in our tracker
+            if tool_call_id not in tool_call_tracker:
+                continue  # Skip orphaned tool messages
+
+        cleaned.append(msg)
+
+    return cleaned
+
+def get_tool_call_id(state, update_type='UpdateMemory'):
+    """Helper function to safely extract tool_call_id from message state"""
+    last_msg = state['messages'][-1]
+    tool_call_id = None
+
+    if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
+        for tool_call in last_msg.tool_calls:
+            # Handle dict-style tool_call
+            if isinstance(tool_call, dict):
+                if tool_call.get('name') == update_type:
+                    tool_call_id = tool_call.get('id')
+                    break
+            # Handle object-style tool_call
+            elif hasattr(tool_call, 'name') and getattr(tool_call, 'name') == update_type:
+                tool_call_id = getattr(tool_call, 'id', None)
+                break
+
+    return tool_call_id
 
 ## Node definitions
 
@@ -295,8 +377,11 @@ def task_mAIstro(state: MessagesState, config: RunnableConfig, store: BaseStore)
         instructions=instructions
     )
 
-    # Respond using memory as well as the chat history, with Gmail tools and voice commands available
-    response = model_with_tools.invoke([SystemMessage(content=system_msg)]+state["messages"])
+    # Clean message history to prevent API errors
+    cleaned_messages = clean_message_history(state["messages"])
+
+    # Respond using memory as well as the cleaned chat history, with Gmail tools and voice commands available
+    response = model_with_tools.invoke([SystemMessage(content=system_msg)]+cleaned_messages)
 
     return {"messages": [response]}
 
@@ -337,9 +422,15 @@ def update_profile(state: MessagesState, config: RunnableConfig, store: BaseStor
                   rmeta.get("json_doc_id", str(uuid.uuid4())),
                   r.model_dump(mode="json"),
             )
-    tool_calls = state['messages'][-1].tool_calls
-    # Return tool message with update verification
-    return {"messages": [{"role": "tool", "content": "updated profile", "tool_call_id":tool_calls[0]['id']}]}
+    # Find the tool call that triggered this update
+    tool_call_id = get_tool_call_id(state, 'UpdateMemory')
+
+    if not tool_call_id:
+        # Fallback if we can't find the proper tool call ID
+        return {"messages": []}
+
+    # Return proper ToolMessage
+    return {"messages": [ToolMessage(content="updated profile", tool_call_id=tool_call_id)]}
 
 def update_todos(state: MessagesState, config: RunnableConfig, store: BaseStore):
 
@@ -390,12 +481,16 @@ def update_todos(state: MessagesState, config: RunnableConfig, store: BaseStore)
                   r.model_dump(mode="json"),
             )
         
-    # Respond to the tool call made in task_mAIstro, confirming the update    
-    tool_calls = state['messages'][-1].tool_calls
+    # Find the tool call that triggered this update
+    tool_call_id = get_tool_call_id(state, 'UpdateMemory')
 
-    # Extract the changes made by Trustcall and add the the ToolMessage returned to task_mAIstro
+    if not tool_call_id:
+        # Fallback if we can't find the proper tool call ID
+        return {"messages": []}
+
+    # Extract the changes made by Trustcall and add to the ToolMessage returned to task_mAIstro
     todo_update_msg = extract_tool_info(spy.called_tools, tool_name)
-    return {"messages": [{"role": "tool", "content": todo_update_msg, "tool_call_id":tool_calls[0]['id']}]}
+    return {"messages": [ToolMessage(content=todo_update_msg, tool_call_id=tool_call_id)]}
 
 def update_instructions(state: MessagesState, config: RunnableConfig, store: BaseStore):
 
@@ -414,12 +509,19 @@ def update_instructions(state: MessagesState, config: RunnableConfig, store: Bas
     system_msg = CREATE_INSTRUCTIONS.format(current_instructions=existing_memory.value if existing_memory else None)
     new_memory = model.invoke([SystemMessage(content=system_msg)]+state['messages'][:-1] + [HumanMessage(content="Please update the instructions based on the conversation")])
 
-    # Overwrite the existing memory in the store 
+    # Overwrite the existing memory in the store
     key = "user_instructions"
     store.put(namespace, key, {"memory": new_memory.content})
-    tool_calls = state['messages'][-1].tool_calls
-    # Return tool message with update verification
-    return {"messages": [{"role": "tool", "content": "updated instructions", "tool_call_id":tool_calls[0]['id']}]}
+
+    # Find the tool call that triggered this update
+    tool_call_id = get_tool_call_id(state, 'UpdateMemory')
+
+    if not tool_call_id:
+        # Fallback if we can't find the proper tool call ID
+        return {"messages": []}
+
+    # Return proper ToolMessage
+    return {"messages": [ToolMessage(content="updated instructions", tool_call_id=tool_call_id)]}
 
 def update_emails(state: MessagesState, config: RunnableConfig, store: BaseStore):
     """Reflect on the chat history and update email drafts."""
@@ -469,12 +571,16 @@ def update_emails(state: MessagesState, config: RunnableConfig, store: BaseStore
                   rmeta.get("json_doc_id", str(uuid.uuid4())),
                   r.model_dump(mode="json"))
         
-    # Respond to the tool call made in task_mAIstro, confirming the update    
-    tool_calls = state['messages'][-1].tool_calls
+    # Find the tool call that triggered this update
+    tool_call_id = get_tool_call_id(state, 'UpdateMemory')
+
+    if not tool_call_id:
+        # Fallback if we can't find the proper tool call ID
+        return {"messages": []}
 
     # Extract the changes made by Trustcall and add to the ToolMessage returned to task_mAIstro
     email_update_msg = extract_tool_info(spy.called_tools, tool_name)
-    return {"messages": [{"role": "tool", "content": email_update_msg, "tool_call_id": tool_calls[0]['id']}]}
+    return {"messages": [ToolMessage(content=email_update_msg, tool_call_id=tool_call_id)]}
 
 def handle_gmail(state: MessagesState, config: RunnableConfig, store: BaseStore):
     """Handle Gmail operations and log to memory."""
@@ -520,17 +626,15 @@ def handle_gmail(state: MessagesState, config: RunnableConfig, store: BaseStore)
                         args['config'] = config.get("configurable", {})
                         
                         result = tool.func(**args)
-                        tool_responses.append({
-                            "role": "tool",
-                            "content": str(result),
-                            "tool_call_id": tool_call['id']
-                        })
+                        tool_responses.append(ToolMessage(
+                            content=str(result),
+                            tool_call_id=tool_call['id']
+                        ))
                     except Exception as e:
-                        tool_responses.append({
-                            "role": "tool", 
-                            "content": f"Error executing {tool_call['name']}: {str(e)}",
-                            "tool_call_id": tool_call['id']
-                        })
+                        tool_responses.append(ToolMessage(
+                            content=f"Error executing {tool_call['name']}: {str(e)}",
+                            tool_call_id=tool_call['id']
+                        ))
                     break
     
     # Store Gmail operations in memory
@@ -548,39 +652,93 @@ def handle_gmail(state: MessagesState, config: RunnableConfig, store: BaseStore)
 
 # Conditional edge
 def route_message(state: MessagesState, config: RunnableConfig, store: BaseStore) -> Literal["__end__", "update_todos", "update_instructions", "update_profile", "update_emails", "handle_gmail"]:
-    """Reflect on the memories and chat history to decide whether to update the memory collection."""
-    message = state['messages'][-1]
-    if len(message.tool_calls) == 0:
+    """Decide next step. Route based on the most recent message with tool calls."""
+    messages = state['messages']
+
+    if not messages:
         return END
-    else:
-        tool_call = message.tool_calls[0]
-        tool_name = tool_call.get('name', '')
-        
-        # Handle Gmail tools directly
-        if tool_name in ['list_gmail_messages', 'get_gmail_message', 'send_gmail_message', 'search_gmail', 'archive_gmail_message', 'delete_gmail_message', 'create_gmail_label', 'add_gmail_label', 'remove_gmail_label', 'mark_gmail_as_read', 'mark_gmail_as_unread', 'read_gmail_message', 'reply_to_gmail', 'check_gmail_service_status']:
-            return "handle_gmail"
-        
-        # Handle UpdateMemory tool calls
-        if tool_name == 'UpdateMemory':
-            update_type = tool_call.get('args', {}).get('update_type')
-            if not update_type:
-                return END
-            
-            if update_type == "user":
-                return "update_profile"
-            elif update_type == "todo":
-                return "update_todos"
-            elif update_type == "instructions":
-                return "update_instructions"
-            elif update_type == "email":
-                return "update_emails"
-            elif update_type == "gmail":
+
+    # Look at the last few messages to understand context
+    last_msg = messages[-1]
+
+    # If the last message is a tool response, we should end (AI should respond)
+    if hasattr(last_msg, 'type') and getattr(last_msg, 'type', None) == 'tool':
+        return END
+
+    # If last message is from human, we should respond
+    if hasattr(last_msg, 'type') and getattr(last_msg, 'type', None) == 'human':
+        return END
+
+    # If last message is AI with tool calls, check if tools have already been executed
+    if hasattr(last_msg, 'tool_calls') and getattr(last_msg, 'tool_calls', None):
+        # Check if there are already tool responses for these tool calls
+        tool_call_ids = set()
+        for tc in last_msg.tool_calls:
+            tc_id = tc.get('id') if isinstance(tc, dict) else getattr(tc, 'id', None)
+            if tc_id:
+                tool_call_ids.add(tc_id)
+
+        # Look for tool responses that match these tool calls
+        responded_ids = set()
+        for msg in messages:
+            if hasattr(msg, 'type') and getattr(msg, 'type', None) == 'tool':
+                tc_id = getattr(msg, 'tool_call_id', None)
+                if tc_id in tool_call_ids:
+                    responded_ids.add(tc_id)
+
+        # If all tool calls have responses, end (don't re-execute)
+        if tool_call_ids and tool_call_ids.issubset(responded_ids):
+            return END
+
+        # Prevent infinite loops: check for repeated identical tool calls
+        gmail_tool_names = ['search_gmail_by_sender_today', 'search_gmail_by_sender_on_date',
+                           'list_gmail_messages', 'get_gmail_message', 'send_gmail_message',
+                           'search_gmail', 'archive_gmail_message', 'delete_gmail_message',
+                           'create_gmail_label', 'add_gmail_label', 'remove_gmail_label',
+                           'mark_gmail_as_read', 'mark_gmail_as_unread', 'read_gmail_message',
+                           'reply_to_gmail', 'check_gmail_service_status', 'search_gmail_smart']
+
+        # Check for repeated identical tool calls (same tool + same args) to prevent loops
+        tool_signatures = []
+        for msg in messages[-5:]:  # Check last 5 messages for exact duplicates
+            if hasattr(msg, 'tool_calls') and getattr(msg, 'tool_calls', None):
+                for tc in msg.tool_calls:
+                    tool_name = tc.get('name', '') if isinstance(tc, dict) else getattr(tc, 'name', '')
+                    tool_args = tc.get('args', {}) if isinstance(tc, dict) else getattr(tc, 'args', {})
+                    if tool_name in gmail_tool_names:
+                        signature = (tool_name, str(sorted(tool_args.items())))
+                        tool_signatures.append(signature)
+
+        # If the same tool call appears more than twice, it's likely a loop
+        from collections import Counter
+        signature_counts = Counter(tool_signatures)
+        if any(count > 2 for count in signature_counts.values()):
+            return END
+
+        # Route to appropriate handler for unanswered tool calls
+        for tool_call in last_msg.tool_calls:
+            tool_name = tool_call.get('name', '') if isinstance(tool_call, dict) else getattr(tool_call, 'name', '')
+
+            # Gmail tools
+            if tool_name in gmail_tool_names:
                 return "handle_gmail"
-            else:
-                return END
-        
-        # Handle other tools (like process_voice_command)
-        return END
+
+            # Memory update tools
+            if tool_name == 'UpdateMemory':
+                args = tool_call.get('args', {}) if isinstance(tool_call, dict) else getattr(tool_call, 'args', {})
+                update_type = args.get('update_type')
+                if update_type == "user":
+                    return "update_profile"
+                elif update_type == "todo":
+                    return "update_todos"
+                elif update_type == "instructions":
+                    return "update_instructions"
+                elif update_type == "email":
+                    return "update_emails"
+                elif update_type == "gmail":
+                    return "handle_gmail"
+
+    return END
 
 # Create the graph + all nodes
 builder = StateGraph(MessagesState, config_schema=configuration.Configuration)
@@ -593,7 +751,7 @@ builder.add_node(update_instructions)
 builder.add_node("update_emails", update_emails)
 builder.add_node("handle_gmail", handle_gmail)
 
-# Define the flow 
+# Define the flow
 builder.add_edge(START, "task_mAIstro")
 builder.add_conditional_edges("task_mAIstro", route_message)
 builder.add_edge("update_todos", "task_mAIstro")

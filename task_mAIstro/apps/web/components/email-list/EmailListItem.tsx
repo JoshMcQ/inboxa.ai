@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { findCtaLink } from "@/utils/parse/parseHtml.client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { internalDateToDate } from "@/utils/date";
+import { cn } from "@/utils";
 
 export const EmailListItem = forwardRef(
   (
@@ -39,7 +40,10 @@ export const EmailListItem = forwardRef(
       rejectingPlan: boolean;
       executePlan: (thread: Thread) => Promise<void>;
       rejectPlan: (thread: Thread) => Promise<void>;
-
+      searchQuery?: string;
+      hasSearchMatch?: boolean;
+      isPendingDelete?: boolean;
+      isPendingUnsubscribe?: boolean;
       refetch: () => void;
     },
     ref: ForwardedRef<HTMLLIElement>,
@@ -67,21 +71,38 @@ export const EmailListItem = forwardRef(
     if (!lastMessage) return null;
 
     const decodedSnippet = decodeSnippet(thread.snippet || lastMessage.snippet);
-
     const cta = findCtaLink(lastMessage.textHtml);
+
+    // Visual highlighting logic
+    const hasSearchMatch = props.hasSearchMatch || false;
+    const isPendingAction = props.isPendingDelete || props.isPendingUnsubscribe || false;
 
     return (
       <ErrorBoundary extra={{ props, cta, decodedSnippet }}>
         <li
           ref={ref}
-          className={clsx("group relative cursor-pointer border-l-4 py-3", {
-            "hover:bg-slate-50 dark:hover:bg-slate-950":
-              !props.selected && !props.opened,
-            "bg-blue-50 dark:bg-blue-950": props.selected,
-            "bg-blue-100 dark:bg-blue-900": props.opened,
-            "bg-slate-100 dark:bg-background":
-              !isUnread && !props.selected && !props.opened,
-          })}
+          className={cn(
+            "group relative cursor-pointer border-l-4 py-3 transition-all duration-200",
+            // Base state styles
+            {
+              "hover:bg-slate-50 dark:hover:bg-slate-950":
+                !props.selected && !props.opened && !hasSearchMatch,
+              "bg-blue-50 dark:bg-blue-950": props.selected && !hasSearchMatch,
+              "bg-blue-100 dark:bg-blue-900": props.opened && !hasSearchMatch,
+              "bg-slate-100 dark:bg-background":
+                !isUnread && !props.selected && !props.opened && !hasSearchMatch,
+            },
+            // Visual highlights from blueprint
+            hasSearchMatch && [
+              "highlight-match animate-found-glow",
+              "border-l-success bg-success/5 dark:bg-success/10",
+              "hover:bg-success/10 dark:hover:bg-success/15"
+            ],
+            isPendingAction && [
+              "border-2 border-dashed border-destructive/50",
+              "bg-destructive/5 dark:bg-destructive/10"
+            ]
+          )}
           onClick={props.onClick}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -172,8 +193,19 @@ export const EmailListItem = forwardRef(
                   />
                 </div>
 
-                {!!(thread.category?.category || thread.plan) && (
+                {!!(thread.category?.category || thread.plan || hasSearchMatch || isPendingAction) && (
                   <div className="ml-3 flex items-center space-x-2 whitespace-nowrap">
+                    {/* Visual highlight pills */}
+                    {hasSearchMatch && (
+                      <span className="pill-match">Match</span>
+                    )}
+                    {props.isPendingDelete && (
+                      <span className="pill-delete">To delete</span>
+                    )}
+                    {props.isPendingUnsubscribe && (
+                      <span className="pill-delete">To unsubscribe</span>
+                    )}
+                    
                     {thread.category?.category ? (
                       <CategoryBadge category={thread.category.category} />
                     ) : null}

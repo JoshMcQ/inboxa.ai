@@ -1,10 +1,8 @@
 import "../../styles/globals.css";
 import type React from "react";
-import { cookies } from "next/headers";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
-import { SideNavWithTopNav } from "@/components/SideNavWithTopNav";
 import { TokenCheck } from "@/components/TokenCheck";
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import { PostHogIdentify } from "@/providers/PostHogProvider";
@@ -17,6 +15,9 @@ import { ErrorMessages } from "@/app/app-layout/ErrorMessages";
 import { QueueInitializer } from "@/store/QueueInitializer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmailViewer } from "@/components/EmailViewer";
+import { TopNav } from "@/components/layout/TopNav";
+import { IconRail } from "@/components/layout/IconRail";
+import { ElevenLabsWidget } from "@/components/ElevenLabsWidget";
 
 export const viewport = {
   themeColor: "#FFF",
@@ -39,15 +40,21 @@ export default async function AppLayout({
 
   if (!session?.user.email) redirect("/login");
 
-  const cookieStore = await cookies();
-  const isClosed = cookieStore.get("sidebar_state")?.value === "false";
-
   return (
     <AppProviders>
-      <SideNavWithTopNav defaultOpen={!isClosed}>
-        <ErrorMessages />
-        {children}
-      </SideNavWithTopNav>
+      {/* Clean Layout Structure: TopNav + IconRail + Content */}
+      <div className="min-h-screen grid grid-rows-[auto_1fr]">
+        <TopNav />
+        <div className="grid grid-cols-[56px_1fr]">
+          <IconRail />
+          <main className="px-6 py-4 overflow-auto">
+            <ErrorMessages />
+            {children}
+          </main>
+        </div>
+      </div>
+      
+      {/* Global Components */}
       <EmailViewer />
       <ErrorBoundary extra={{ component: "AppLayout" }}>
         <PostHogIdentify />
@@ -62,6 +69,8 @@ export default async function AppLayout({
         <Suspense>
           <CrispWithNoSSR email={session.user.email} />
         </Suspense>
+        {/* ElevenLabs Voice Assistant Widget - The backbone of the app */}
+        <ElevenLabsWidget userId={session.user.id} />
       </ErrorBoundary>
     </AppProviders>
   );

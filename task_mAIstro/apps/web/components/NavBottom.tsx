@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChartIcon,
   MailMinusIcon,
+  MicIcon,
   ShieldHalfIcon,
   SparklesIcon,
 } from "lucide-react";
@@ -33,11 +34,16 @@ function NavBarBottom({
               key={link.path}
               href={link.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 hover:text-foreground",
+                "flex flex-col items-center justify-center gap-1 hover:text-foreground relative",
                 link.isSelected ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              <link.icon className="h-5 w-5" />
+              <div className="relative">
+                <link.icon className="h-5 w-5" />
+                {link.label === "Assistant" && (
+                  <MicIcon className="absolute -right-1 -top-1 size-2 text-green-500" />
+                )}
+              </div>
               <span className="text-xs">{link.label}</span>
             </Link>
           );

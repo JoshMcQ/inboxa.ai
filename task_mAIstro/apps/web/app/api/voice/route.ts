@@ -11,9 +11,7 @@ const GRAPH_NAME =
   process.env.NEXT_PUBLIC_GRAPH_NAME ||
   "task_maistro";
 
-const MOCK_VOICE =
-  (process.env.MOCK_VOICE?.toLowerCase() === "true") ||
-  process.env.NODE_ENV !== "production";
+const MOCK_VOICE = process.env.MOCK_VOICE?.toLowerCase() === "true";
 
 // Small helper to emit a mock streaming response when LangGraph is offline (useful in dev)
 function createMockVoiceStream(message: string) {
@@ -71,10 +69,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    // Get the email account ID from headers (required for Gmail API access)
+    const emailAccountId = request.headers.get("X-Email-Account-ID");
+    if (!emailAccountId) {
+      return NextResponse.json({ error: "Email account ID is required" }, { status: 400 });
+    }
+
+    // Get the current request origin for API calls
+    const origin = request.headers.get("origin") || `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+
     // Configure the request to the LangGraph agent
     const config = {
       configurable: {
         user_id: userId || session.user.email,
+        email_account_id: emailAccountId,
+        // Use origin as base URL (no trailing /api) to avoid double /api in requests
+        api_base_url: origin,
+        session_cookies: request.headers.get("cookie") || "",
         todo_category: "general",
         task_maistro_role:
           "You are a helpful voice-controlled email assistant. You help users manage their emails, create todos, and draft responses using voice commands.",
@@ -130,6 +141,7 @@ export async function POST(request: NextRequest) {
           },
           config,
           stream_mode: "values",
+          enable_voice: true,
         }),
       },
       15000,

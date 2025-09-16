@@ -2,40 +2,56 @@
 
 <p align="center">
   <a href="https://www.inboxa.ai">
-    <h1 align="center">inboxa ai - Your AI Email Assistant</h1>
+    <h1 align="center">InboxA.ai - Your AI Personal Assistant</h1>
   </a>
   <p align="center">
-    Open source email app to reach inbox zero fast.
+    The ultimate voice-first AI personal assistant for email and task management.
     <br />
     <a href="https://www.inboxa.ai">Website</a>
     ·
     <a href="https://www.inboxa.ai/discord">Discord</a>
     ·
-    <a href="https://github.com/elie222/inboxa-ai/issues">Issues</a>
+    <a href="https://github.com/inboxaai/inboxa-ai/issues">Issues</a>
   </p>
 </p>
 
 ## About
 
-There are two parts to inboxa ai:
+InboxA.ai is a unified AI personal assistant that revolutionizes how you interact with email and manage tasks:
 
-1. An AI email assistant that helps you spend less time on email.
-2. Open source AI email client.
+1. **Voice-First Email Management** - Control your entire inbox with natural voice commands
+2. **Intelligent Task Management** - AI-powered todo system that learns your preferences
+3. **Multi-Memory System** - Remembers your personal context, preferences, and communication style
+4. **Predictive Email Actions** - AI suggests and automates email operations based on your patterns
 
-If you're looking to contribute to the project, the email client is the best place to do this.
+Built on LangGraph with comprehensive Gmail integration and ElevenLabs voice synthesis.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Felie222%2Finboxa-ai&env=NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_ENCRYPT_SECRET,GOOGLE_ENCRYPT_SALT,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,GOOGLE_PUBSUB_TOPIC_NAME,DATABASE_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Finboxaai%2Finboxa-ai&env=NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_ENCRYPT_SECRET,GOOGLE_ENCRYPT_SALT,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,GOOGLE_PUBSUB_TOPIC_NAME,DATABASE_URL,OPENAI_API_KEY,ELEVENLABS_API_KEY)
 
-Thanks to Vercel for sponsoring inboxa ai in support of open-source software.
+Thanks to Vercel for sponsoring InboxA.ai in support of open-source software.
 
 ## Features
 
-- **AI Personal Assistant:** Manages your email for you based on a plain text prompt file. It can take any action a human assistant can take on your behalf (Draft reply, Label, Archive, Reply, Forward, Mark Spam, and even call a webhook).
-- **Reply Zero:** Track emails that need your reply and those awaiting responses.
-- **Smart Categories:** Categorize everyone that's ever emailed you.
-- **Bulk Unsubscriber:** Quickly unsubscribe from emails you never read in one-click.
-- **Cold Email Blocker:** Automatically block cold emails.
-- **Email Analytics:** Track your email activity with daily, weekly, and monthly stats.
+### 🎯 **Voice-First Email Control**
+- Natural voice commands for all email operations
+- "Read my emails", "Reply to Sarah", "Archive newsletters"
+- Hands-free email management while multitasking
+
+### 🧠 **Intelligent Memory System**
+- **Personal Memory:** Remembers your preferences, relationships, communication style
+- **Task Memory:** Manages your todos with smart suggestions and deadlines
+- **Email Memory:** Learns from your email patterns and behaviors
+- **Context Memory:** Maintains conversation history and user instructions
+
+### ⚡ **Predictive Email Actions**
+- AI suggests bulk operations based on your patterns
+- Smart categorization that improves over time
+- Automated email triage and prioritization
+
+### 📱 **Seamless Experience**
+- ElevenLabs voice synthesis for natural responses
+- Real-time Gmail integration with OAuth2
+- Mobile-ready interface for on-the-go management
 
 Learn more in our [docs](https://docs.inboxa.ai).
 
@@ -49,7 +65,7 @@ Learn more in our [docs](https://docs.inboxa.ai).
 
 ## Demo Video
 
-[![inboxa ai demo](/video-thumbnail.png)](http://www.youtube.com/watch?v=hfvKvTHBjG0)
+[![InboxA.ai demo](/video-thumbnail.png)](http://www.youtube.com/watch?v=hfvKvTHBjG0)
 
 ## Built with
 
@@ -59,18 +75,20 @@ Learn more in our [docs](https://docs.inboxa.ai).
 - [Prisma](https://www.prisma.io/)
 - [Upstash](https://upstash.com/)
 - [Turborepo](https://turbo.build/)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+- [ElevenLabs](https://elevenlabs.io/)
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=elie222/inboxa-ai&type=Date)](https://www.star-history.com/#elie222/inboxa-ai&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=inboxaai/inboxa-ai&type=Date)](https://www.star-history.com/#inboxaai/inboxa-ai&Date)
 
 ## Feature Requests
 
-To request a feature open a [GitHub issue](https://github.com/elie222/inboxa-ai/issues), or join our [Discord](https://www.inboxa.ai/discord).
+To request a feature open a [GitHub issue](https://github.com/inboxaai/inboxa-ai/issues), or join our [Discord](https://www.inboxa.ai/discord).
 
 ## Getting Started for Developers
 
-We offer a hosted version of inboxa ai at [https://inboxa.ai](https://inboxa.ai). To self-host follow the steps below.
+We offer a hosted version of InboxA.ai at [https://inboxa.ai](https://inboxa.ai). To self-host follow the steps below.
 
 ### Setup
 
@@ -80,6 +98,7 @@ We offer a hosted version of inboxa ai at [https://inboxa.ai](https://inboxa.ai)
 
 - [Node.js](https://nodejs.org/en/) >= 18.0.0
 - [pnpm](https://pnpm.io/) >= 8.6.12
+- [Python](https://python.org/) >= 3.8 (for voice assistant)
 - [Docker desktop](https://www.docker.com/products/docker-desktop/) (recommended but optional)
 
 Make sure you have the above installed before starting.
@@ -88,6 +107,8 @@ The external services that are required are (detailed setup instructions below):
 
 - [Google OAuth](https://console.cloud.google.com/apis/credentials)
 - [Google PubSub](https://console.cloud.google.com/cloudpubsub/topic/list)
+- [OpenAI API](https://platform.openai.com/api-keys) (for AI functionality)
+- [ElevenLabs API](https://elevenlabs.io/) (for voice synthesis)
 
 ### Updating .env file: secrets
 
@@ -109,12 +130,43 @@ Secrets:
 - `GOOGLE_ENCRYPT_SECRET` -- Secret key for encrypting OAuth tokens (try using `openssl rand -hex 32` for a secure key)
 - `GOOGLE_ENCRYPT_SALT` -- Salt for encrypting OAuth tokens (try using `openssl rand -hex 16` for a secure salt)
 
+AI Services:
+
+- `OPENAI_API_KEY` -- OpenAI API key for LangGraph agent
+- `ELEVENLABS_API_KEY` -- ElevenLabs API key for voice synthesis
+
 Redis:
 
 - `UPSTASH_REDIS_URL` -- Redis URL from Upstash. (can be empty if you are using Docker Compose)
 - `UPSTASH_REDIS_TOKEN` -- Redis token from Upstash. (or specify your own random string if you are using Docker Compose)
 
 When using Vercel with Fluid Compute turned off, you should set `MAX_DURATION=300` or lower. See Vercel limits for different plans [here](https://vercel.com/docs/functions/configuring-functions/duration#duration-limits).
+
+### Voice Assistant Setup
+
+#### ElevenLabs Integration
+
+For voice output, you'll need an ElevenLabs API key:
+
+1. Sign up at [ElevenLabs](https://elevenlabs.io/)
+2. Get your API key from the dashboard
+3. Add to your `.env` file:
+
+```bash
+ELEVENLABS_API_KEY=your_api_key_here
+```
+
+#### Task mAIstro Server
+
+The voice assistant runs on a separate Python server using LangGraph:
+
+```bash
+cd task_mAIstro
+pip install -r requirements.txt
+python server.py
+```
+
+This starts the LangGraph agent with Gmail tools and memory management on port 2024.
 
 ### Updating .env file with Google OAuth credentials:
 
@@ -215,7 +267,14 @@ To run the migrations:
 pnpm prisma migrate dev
 ```
 
-To run the app locally for development (slower):
+To start the voice assistant server:
+
+```bash
+cd task_mAIstro
+python server.py
+```
+
+To run the web app locally for development (slower):
 
 ```bash
 pnpm run dev
@@ -290,7 +349,7 @@ The Google watch is necessary. Others are optional.
 
 ### Contributing to the project
 
-You can view open tasks in our [GitHub Issues](https://github.com/elie222/inboxa-ai/issues).
+You can view open tasks in our [GitHub Issues](https://github.com/inboxaai/inboxa-ai/issues).
 Join our [Discord](https://www.inboxa.ai/discord) to discuss tasks and check what's being worked on.
 
-[ARCHITECTURE.md](./ARCHITECTURE.md) explains the architecture of the project (LLM generated).
+[ARCHITECTURE.md](./ARCHITECTURE.md) explains the architecture of the project.

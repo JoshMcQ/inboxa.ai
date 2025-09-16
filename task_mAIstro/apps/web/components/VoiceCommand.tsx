@@ -30,9 +30,10 @@ interface SpeechRecognition extends EventTarget {
 interface VoiceCommandProps {
   onResponse?: (response: string) => void;
   userId?: string;
+  emailAccountId?: string;
 }
 
-export function VoiceCommand({ onResponse, userId }: VoiceCommandProps) {
+export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceCommandProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -145,11 +146,23 @@ export function VoiceCommand({ onResponse, userId }: VoiceCommandProps) {
       }
 
       // Send transcript to voice API
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Include email account ID if provided for authentication
+      if (emailAccountId) {
+        headers['X-Email-Account-ID'] = emailAccountId;
+      } else {
+        console.error('Voice command missing emailAccountId - this will cause authentication errors');
+        toast.error('Voice commands require email account authentication. Please refresh and try again.');
+        setIsProcessing(false);
+        return;
+      }
+
       const response = await fetch('/api/voice', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           message: transcript,
           userId: userId,
@@ -195,6 +208,7 @@ export function VoiceCommand({ onResponse, userId }: VoiceCommandProps) {
       // Parse the response (assuming it's JSON lines format)
       const lines = fullResponse.split('\n').filter(line => line.trim());
       let lastMessage = "";
+      let audioBase64 = null;
       
       for (const line of lines) {
         try {
@@ -205,6 +219,10 @@ export function VoiceCommand({ onResponse, userId }: VoiceCommandProps) {
               lastMessage = lastMsg.content;
             }
           }
+          // Check for ElevenLabs audio
+          if (data.audio_base64) {
+            audioBase64 = data.audio_base64;
+          }
         } catch (e) {
           // Skip invalid JSON lines
         }
@@ -214,12 +232,51 @@ export function VoiceCommand({ onResponse, userId }: VoiceCommandProps) {
         toast.success("Voice command processed successfully!");
         onResponse?.(lastMessage);
         
-        // Use speech synthesis to read the response
-        if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(lastMessage);
-          utterance.rate = 0.8;
-          utterance.pitch = 1;
-          speechSynthesis.speak(utterance);
+        // Play ElevenLabs audio if available, otherwise use browser speech synthesis
+        if (audioBase64) {
+          try {
+            // Convert base64 to audio blob and play
+            const audioData = atob(audioBase64);
+            const audioArray = new Uint8Array(audioData.length);
+            for (let i = 0; i < audioData.length; i++) {
+              audioArray[i] = audioData.charCodeAt(i);
+            }
+            const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            
+            audio.onended = () => {
+              URL.revokeObjectURL(audioUrl);
+            };
+            
+            audio.play().catch(e => {
+              console.error('Failed to play ElevenLabs audio:', e);
+              // Fallback to browser speech synthesis
+              if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(lastMessage);
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+              }
+            });
+          } catch (e) {
+            console.error('Failed to process ElevenLabs audio:', e);
+            // Fallback to browser speech synthesis
+            if ('speechSynthesis' in window) {
+              const utterance = new SpeechSynthesisUtterance(lastMessage);
+              utterance.rate = 0.8;
+              utterance.pitch = 1;
+              speechSynthesis.speak(utterance);
+            }
+          }
+        } else {
+          // Fallback to browser speech synthesis
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(lastMessage);
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            speechSynthesis.speak(utterance);
+          }
         }
       } else {
         toast.error("No response received from the assistant");

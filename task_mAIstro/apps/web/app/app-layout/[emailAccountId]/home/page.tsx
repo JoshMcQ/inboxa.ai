@@ -1,283 +1,144 @@
-import Link from "next/link";
+import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import prisma from "@/utils/prisma";
-import { getPaginatedThreadTrackers } from "@/app/app-layout/[emailAccountId]/r-zero/fetch-trackers";
-import { ThreadTrackerType } from "@prisma/client";
-import { MicControl } from "@/components/mic/MicControl";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { prefixPath } from "@/utils/path";
-import {
+import { Button } from "@/components/ui/button";
+import { 
+  CalendarIcon,
   MailIcon,
-  BotIcon,
-  ScissorsIcon,
-  SparklesIcon,
-  ShieldCheckIcon,
-  UserIcon,
+  AlertCircleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  RefreshCwIcon
 } from "lucide-react";
-import { checkUserOwnsEmailAccount } from "@/utils/email-account";
+import { cn } from "@/utils";
+import Link from "next/link";
+import { prefixPath } from "@/utils/path";
 
-/**
- * New Home (Triage) per Sprint 1
- * - Hero with primary Start voice triage
- * - Quick actions chips
- * - Bento (Reply fast, Unsubscribe sweep) with KPI badges
- * - Focus placeholder (full-width)
- */
 export default async function HomePage(props: {
   params: Promise<{ emailAccountId: string }>;
 }) {
-  const { emailAccountId } = await props.params;
+  const params = await props.params;
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  // Authorization guard
-  await checkUserOwnsEmailAccount({ emailAccountId });
-
-  // Non-blocking KPI aggregation
-  let awaitingReply: number | undefined = undefined;
-  let newslettersCount: number | undefined = undefined;
-
-  try {
-    const [{ count }, newslettersGroup] = await Promise.all([
-      getPaginatedThreadTrackers({
-        emailAccountId,
-        type: ThreadTrackerType.NEEDS_REPLY,
-        page: 1,
-        timeRange: "all",
-      }),
-      prisma.newsletter.groupBy({
-        where: { emailAccountId },
-        by: ["status"],
-        _count: true,
-      }),
-    ]);
-    awaitingReply = count;
-    newslettersCount = newslettersGroup.reduce(
-      (acc, n) => acc + Number(n._count),
-      0,
-    );
-  } catch {
-    // Render without KPIs if the aggregation fails
+  if (!userId) {
+    return <div>Please log in to view your agenda.</div>;
   }
 
+  // Fetch real agenda items from database (fail-safe)
+  let items: Array<any> = [];
+  try {
+    items = await prisma.agendaItem.findMany({
+      where: {
+        userId,
+        status: { not: "done" },
+      },
+      orderBy: [
+        { priority: "desc" },
+        { dueAt: "asc" },
+        { updatedAt: "desc" },
+      ],
+      take: 100,
+    });
+  } catch (err) {
+    console.error("Failed to fetch AgendaItem records", err);
+  }
+
+  const currentTime = new Date();
+  const greeting = getGreeting(currentTime);
+  
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-4 py-6 lg:px-6 lg:py-8">
-      <Hero emailAccountId={emailAccountId} />
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              {greeting}, {session.user?.name || "there"}
+            </h1>
+            <p className="text-muted-foreground">
+              {new Intl.DateTimeFormat('en-US', { 
+                weekday: 'long',
+                month: 'long', 
+                day: 'numeric',
+                year: 'numeric'
+              }).format(currentTime)}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <form action="/api/calendar/sync" method="post">
+              <Button type="submit" variant="outline" size="sm">
+                <RefreshCwIcon className="size-4 mr-2" />
+                Sync Calendar
+              </Button>
+            </form>
+          </div>
+        </div>
 
-      <QuickActions emailAccountId={emailAccountId} />
-
-      <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
-        <ReplyFastCard
-          emailAccountId={emailAccountId}
-          awaitingReply={awaitingReply}
-        />
-        <UnsubscribeCard
-          emailAccountId={emailAccountId}
-          newslettersCount={newslettersCount}
-        />
-      </div>
-
-      <FocusSection emailAccountId={emailAccountId} />
-    </div>
-  );
-}
-
-/* Hero */
-
-function Hero({ emailAccountId }: { emailAccountId: string }) {
-  return (
-    <div className="mb-4 rounded-[16px] border border-[var(--border-color)] bg-white p-6 elevation-base">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* Real Agenda Items */}
         <div>
-          <h1 className="text-gradient">Manage your inbox at the speed of voice</h1>
-          <p className="mt-1 text-[var(--text-muted)]">
-            Summarize, triage, reply, and unsubscribe—your assistant does the busywork.
-          </p>
+          <h2 className="text-xl font-semibold mb-4">Today's Agenda</h2>
+          {items.length === 0 ? (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">
+                No agenda items found. Try syncing your calendar or check your email for tasks.
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item) => (
+                <Card key={item.id} className={cn(
+                  "p-4 transition-colors",
+                  item.priority >= 2 && "border-destructive bg-destructive/5"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          {item.source === 'calendar' && <CalendarIcon className="size-4" />}
+                          {item.source === 'gmail' && <MailIcon className="size-4" />}
+                          <span className="font-medium">{item.title}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {item.actionNeeded && <Badge variant="secondary">Action needed</Badge>}
+                          {item.priority >= 2 && <Badge variant="destructive">Urgent</Badge>}
+                          {item.priority === 1 && <Badge>High Priority</Badge>}
+                        </div>
+                      </div>
+                      
+                      {item.subtitle && (
+                        <div className="text-sm text-muted-foreground mb-1">{item.subtitle}</div>
+                      )}
+                      
+                      {item.dueAt && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <ClockIcon className="size-3" />
+                          Due {item.dueAt.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button size="sm" variant="ghost">
+                      <CheckCircleIcon className="size-4" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-        <MicControl>
-          <Button variant="primary" size="md">Start voice triage</Button>
-        </MicControl>
+
       </div>
     </div>
   );
 }
 
-/* Quick actions */
-
-function QuickActions({ emailAccountId }: { emailAccountId: string }) {
-  const items = [
-    {
-      icon: <SparklesIcon className="h-4 w-4" />,
-      label: "Summarize today",
-      href: prefixPath(emailAccountId, "/assistant"),
-    },
-    {
-      icon: <BotIcon className="h-4 w-4" />,
-      label: "Draft replies",
-      href: prefixPath(emailAccountId, "/assistant"),
-    },
-    {
-      icon: <ScissorsIcon className="h-4 w-4" />,
-      label: "Unsubscribe top 10",
-      href: prefixPath(emailAccountId, "/unsubscribe"),
-    },
-    {
-      icon: <UserIcon className="h-4 w-4" />,
-      label: "Brief me next meeting",
-      href: prefixPath(emailAccountId, "/assistant"),
-    },
-  ] as const;
-
-  return (
-    <Card className="elevation-base flex flex-wrap items-center gap-2 border border-[var(--border-color)] bg-white px-3 py-2">
-      {items.map((i) => (
-        <Button asChild key={i.label} variant="ghost" size="sm">
-          <Link href={i.href} className="flex items-center gap-2">
-            {i.icon}
-            {i.label}
-          </Link>
-        </Button>
-      ))}
-    </Card>
-  );
-}
-
-/* Bento: Reply fast */
-
-function ReplyFastCard({
-  emailAccountId,
-  awaitingReply,
-}: {
-  emailAccountId: string;
-  awaitingReply?: number;
-}) {
-  return (
-    <Card className="elevation-base rounded-[16px] border border-[var(--border-color)] bg-white p-4">
-      <div className="mb-3">
-        <h3 className="text-[var(--text-foreground)]">Reply in minutes, not hours</h3>
-        <p className="text-sm text-[var(--text-muted)]">
-          Your assistant drafts first replies in your tone; you approve and send.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button asChild variant="primary" size="md">
-            <Link href={prefixPath(emailAccountId, "/r-zero")}>Open reply board</Link>
-          </Button>
-          <Button asChild variant="secondary" size="md">
-            <Link href={prefixPath(emailAccountId, "/assistant")}>Auto‑draft today’s replies</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-[12px] border border-[var(--border-color)] bg-white">
-        <Row
-          icon=<MailIcon className="h-4 w-4" />
-          title="Awaiting reply"
-          description="Open your reply board and knock out responses fast."
-          href={prefixPath(emailAccountId, "/r-zero")}
-          count={awaitingReply}
-        />
-        <Divider />
-        <Row
-          icon=<BotIcon className="h-4 w-4" />
-          title="Auto‑draft replies"
-          description="Let your assistant write first drafts in your tone."
-          href={prefixPath(emailAccountId, "/assistant")}
-        />
-      </div>
-    </Card>
-  );
-}
-
-/* Bento: Unsubscribe */
-
-function UnsubscribeCard({
-  emailAccountId,
-  newslettersCount,
-}: {
-  emailAccountId: string;
-  newslettersCount?: number;
-}) {
-  return (
-    <Card className="elevation-base rounded-[16px] border border-[var(--border-color)] bg-white p-4">
-      <div className="mb-3">
-        <h3 className="text-[var(--text-foreground)]">Unsubscribe & archive in one sweep</h3>
-        <p className="text-sm text-[var(--text-muted)]">
-          Clean newsletters from the last 90 days with a single click.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button asChild variant="primary" size="md">
-            <Link href={prefixPath(emailAccountId, "/unsubscribe")}>Start sweep</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-[12px] border border-[var(--border-color)] bg-white">
-        <Row
-          icon=<ScissorsIcon className="h-4 w-4" />
-          title="Unsubscribe and archive last 90 days"
-          description="One click to clean up recurring senders."
-          href={prefixPath(emailAccountId, "/unsubscribe")}
-          count={newslettersCount}
-        />
-      </div>
-    </Card>
-  );
-}
-
-/* Focus placeholder */
-
-function FocusSection({ emailAccountId }: { emailAccountId: string }) {
-  return (
-    <Card className="elevation-base mt-6 rounded-[16px] border border-[var(--border-color)] bg-white p-4">
-      <div className="mb-3">
-        <h3 className="text-[var(--text-foreground)]">Today’s Focus</h3>
-        <p className="text-sm text-[var(--text-muted)]">
-          Your assistant highlights urgent items, follow‑ups due, and calendar conflicts.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button asChild variant="primary" size="md">
-            <Link href={prefixPath(emailAccountId, "/assistant")}>Ask the assistant</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-[12px] border border-[var(--border-color)] bg-white p-4 text-sm text-[var(--text-muted)]">
-        Tap Ask the assistant and say “Summarize today’s inbox” to get a quick brief and next actions.
-      </div>
-    </Card>
-  );
-}
-
-/* Shared row */
-
-function Row({
-  icon,
-  title,
-  description,
-  href,
-  count,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  href: string;
-  count?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      className="hover-lift flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50"
-    >
-      <div className="mt-0.5 text-[var(--text-muted)]">{icon}</div>
-      <div>
-        <div className="font-medium text-[var(--text-foreground)]">
-          {title}
-          {typeof count === "number" ? ` (${count})` : null}
-        </div>
-        <div className="text-xs text-[var(--text-muted)]">{description}</div>
-      </div>
-    </Link>
-  );
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-[var(--border-color)]" />;
+function getGreeting(time: Date): string {
+  const hour = time.getHours();
+  
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }

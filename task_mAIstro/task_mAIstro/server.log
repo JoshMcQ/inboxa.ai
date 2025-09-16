@@ -1,0 +1,10 @@
+INFO:voice_synthesis:ElevenLabs voice synthesis initialized
+INFO:     Will watch for changes in these directories: ['/Users/jmcqueary2023/inboxa.ai/task_mAIstro/task_mAIstro']
+ERROR:    [Errno 1] Operation not permitted
+🚀 Starting task_mAIstro API server on 0.0.0.0:2024
+📊 LangSmith tracing: true
+🔑 OpenAI API configured: ✅
+🎵 ElevenLabs configured: ✅
+🎤 Voice synthesis: Enabled
+📧 Gmail tools: Integrated
+🧠 Memory system: Active

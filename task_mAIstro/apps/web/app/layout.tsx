@@ -15,7 +15,7 @@ import { startupImage } from "@/app/startup-image";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
   preload: true,
   display: "swap",
 });

@@ -38,7 +38,7 @@ export function SideNavMenu({
               className={
                 "h-9 relative " +
                 (active
-                  ? "pl-2 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-indigo-600 text-gray-900 font-medium"
+                  ? "pl-2 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-primary text-primary font-medium"
                   : "")
               }
               tooltip={item.name}
