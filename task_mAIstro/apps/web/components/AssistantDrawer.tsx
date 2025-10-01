@@ -3,13 +3,12 @@
 import React, { useState } from "react";
 import { cn } from "@/utils";
 import { Button } from "@/components/ui/button";
-import { 
-  XIcon, 
-  MessageSquareIcon, 
+import {
+  XIcon,
+  MessageSquareIcon,
   SparklesIcon,
-  ChevronRightIcon 
+  ChevronRightIcon
 } from "lucide-react";
-import { Mic } from "./Mic";
 
 interface AssistantDrawerProps {
   isOpen: boolean;
@@ -100,7 +99,7 @@ export function AssistantDrawer({ isOpen, onClose, className }: AssistantDrawerP
 
         {/* Context bar with suggestions */}
         <div className="p-4 bg-gray-50 border-b">
-          <div className="text-sm text-gray-600 mb-2">Try saying:</div>
+          <div className="text-sm text-gray-600 mb-2">Quick actions:</div>
           <div className="flex flex-wrap gap-1">
             {suggestedPrompts.slice(0, 2).map((prompt, index) => (
               <button
@@ -194,19 +193,11 @@ export function AssistantDrawer({ isOpen, onClose, className }: AssistantDrawerP
                 }}
               />
             </div>
-            <Mic 
-              size="sm" 
-              contextCommands={suggestedPrompts}
-              onToggle={() => {
-                // Handle voice input
-                console.log('Start voice input');
-              }}
-            />
           </div>
           
           {/* Hints */}
           <div className="mt-2 text-xs text-gray-500 text-center">
-            Enter to send • ⌘+Enter new line • Hold ⌘ to talk
+            Enter to send - ⌘+Enter new line
           </div>
         </div>
       </div>

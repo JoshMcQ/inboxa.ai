@@ -20,7 +20,6 @@ const rows: Row[] = [
   { combo: "a", description: "Open Assistant drawer" },
   { combo: "g then i", description: "Go to Inbox" },
   { combo: "⌘/Ctrl + k", description: "Command palette" },
-  { combo: "Hold ⌘", description: "Hold to talk (voice)" },
   { combo: "Esc", description: "Dismiss dialogs / blur inputs" },
 ];
 

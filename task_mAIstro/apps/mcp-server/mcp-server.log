@@ -1,0 +1,5 @@
+
+> @inboxa/mcp-server@0.0.1 start /Users/jmcqueary2023/inboxa.ai/task_mAIstro/apps/mcp-server
+> node build/index.js
+
+InboxaAI MCP Server running on stdio

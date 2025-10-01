@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
       emailAccountId: emailAccountId || "cmej6xrtq0004t2ukwvgm0ux6", // fallback for testing
       userId: userId || "cmej6xrig0000t2uk0jppbmw3", // fallback for testing
       conversationId,
-      userTimezone
+      userTimezone,
+      fastLaneMode: "full",
     };
 
     console.log('Calling internal API with:', JSON.stringify(internalPayload, null, 2));
@@ -64,9 +65,18 @@ export async function POST(request: NextRequest) {
     const result = await response.json();
     console.log('Internal API response:', result);
 
+    const responseText = (result.response as string) || "I understand. Let me help you with that.";
+    console.log('Returning response to ElevenLabs', {
+      conversationId,
+      emailAccountId,
+      userId,
+      fast: result.fast ?? false,
+      response: responseText,
+    });
+
     // Return response in format ElevenLabs expects (full text)
     return NextResponse.json({
-      response: (result.response as string) || "I understand. Let me help you with that.",
+      response: responseText,
       conversation_id: conversationId
     });
 

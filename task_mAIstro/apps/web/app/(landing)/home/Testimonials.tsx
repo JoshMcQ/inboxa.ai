@@ -15,7 +15,7 @@ const testimonials = [
     stats: "Saves 3.2 hours daily"
   },
   {
-    content: "The voice commands are revolutionary. I manage my entire inbox during my commute. The AI drafts responses that sound exactly like my writing style - my team can't tell the difference.",
+    content: "The ElevenLabs voice integration is revolutionary. I manage my entire inbox during my commute. The AI drafts responses that sound exactly like my writing style - my team can't tell the difference.",
     author: "Michael Rodriguez", 
     role: "Founder & CEO",
     company: "StartupLab",

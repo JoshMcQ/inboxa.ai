@@ -7,7 +7,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
-    PORT: z.number().default(5000),
+    PORT: z.coerce.number().default(5000),
     GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
   },

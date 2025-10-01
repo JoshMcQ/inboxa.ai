@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { CommandK } from "@/components/CommandK";
-import { Mic } from "@/components/Mic";
 import { AssistantDrawer } from "@/components/AssistantDrawer";
 import {
   SearchIcon,
@@ -119,16 +118,6 @@ export function AppShell({ children, emailAccountId, className }: AppShellProps)
             <PenLineIcon className="w-4 h-4 mr-2" />
             Compose
           </Button>
-          
-          {/* Mic */}
-          <Mic 
-            state="idle"
-            contextCommands={[
-              "Summarize today's inbox",
-              "Draft replies to urgent emails",
-              "Run email sweep"
-            ]}
-          />
           
           {/* Status Pill */}
           <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm border border-green-200">

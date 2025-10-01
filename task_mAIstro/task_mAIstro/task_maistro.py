@@ -1,3 +1,5 @@
+import json
+import logging
 import uuid
 from datetime import datetime
 
@@ -25,6 +27,8 @@ from voice_commands import process_voice_command
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 ## Utilities 
 
@@ -606,37 +610,95 @@ def handle_gmail(state: MessagesState, config: RunnableConfig, store: BaseStore)
     
     # Extract Gmail operations and execute them
     gmail_operations = []
-    gmail_tool_names = [tool.name for tool in GMAIL_TOOLS]  # Use .name instead of .__name__
+    gmail_tool_names = {tool.name: tool for tool in GMAIL_TOOLS}
     tool_responses = []
-    
+
     for tool_call in ai_message_with_tools.tool_calls:
-        if tool_call['name'] in gmail_tool_names:
-            gmail_operations.append({
-                "operation": tool_call['name'],
-                "args": tool_call['args'],
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # Execute the Gmail tool and generate response
-            for tool in GMAIL_TOOLS:
-                if tool.name == tool_call['name']:
-                    try:
-                        # Pass configuration to Gmail tools
-                        args = tool_call['args'].copy()
-                        args['config'] = config.get("configurable", {})
-                        
-                        result = tool.func(**args)
-                        tool_responses.append(ToolMessage(
-                            content=str(result),
-                            tool_call_id=tool_call['id']
-                        ))
-                    except Exception as e:
-                        tool_responses.append(ToolMessage(
-                            content=f"Error executing {tool_call['name']}: {str(e)}",
-                            tool_call_id=tool_call['id']
-                        ))
-                    break
-    
+        tool_call_id = None
+        tool_name = None
+        raw_args = None
+
+        if isinstance(tool_call, dict):
+            tool_call_id = tool_call.get("id")
+            if "function" in tool_call and isinstance(tool_call["function"], dict):
+                fn = tool_call["function"]
+                tool_name = fn.get("name") or tool_call.get("name")
+                raw_args = fn.get("arguments")
+            else:
+                tool_name = tool_call.get("name")
+                raw_args = tool_call.get("args")
+        else:
+            tool_call_id = getattr(tool_call, "id", None)
+            function = getattr(tool_call, "function", None)
+            if function is not None:
+                tool_name = getattr(function, "name", None) or getattr(tool_call, "name", None)
+                raw_args = getattr(function, "arguments", None)
+            else:
+                tool_name = getattr(tool_call, "name", None)
+                raw_args = getattr(tool_call, "args", None)
+
+        if tool_call_id is None:
+            logger.warning("Skipping Gmail tool call without id: %s", tool_call)
+            continue
+
+        # Normalise arguments from OpenAI tool payloads (they arrive as JSON strings)
+        tool_args: dict[str, object]
+        if isinstance(raw_args, str):
+            try:
+                tool_args = json.loads(raw_args) if raw_args else {}
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse arguments for %s: %s", tool_name, raw_args)
+                tool_args = {}
+        elif isinstance(raw_args, dict):
+            tool_args = raw_args.copy()
+        elif raw_args is None:
+            tool_args = {}
+        else:
+            tool_args = dict(raw_args) if isinstance(raw_args, list) else {}
+
+        if tool_name not in gmail_tool_names:
+            logger.warning("Unhandled Gmail tool call %s; returning noop response", tool_name)
+            tool_responses.append(
+                ToolMessage(
+                    content=f"Unsupported Gmail operation '{tool_name}'",
+                    tool_call_id=tool_call_id,
+                )
+            )
+            continue
+
+        gmail_operations.append(
+            {
+                "operation": tool_name,
+                "args": tool_args,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+        try:
+            tool = gmail_tool_names[tool_name]
+            args = tool_args.copy()
+            try:
+                config_payload = config.get("configurable", {})
+            except AttributeError:
+                config_payload = {}
+            args["config"] = config_payload or {}
+
+            result = tool.func(**args)
+            tool_responses.append(
+                ToolMessage(
+                    content=str(result),
+                    tool_call_id=tool_call_id,
+                )
+            )
+        except Exception as e:
+            logger.exception("Error executing Gmail tool %s", tool_name)
+            tool_responses.append(
+                ToolMessage(
+                    content=f"Error executing {tool_name}: {str(e)}",
+                    tool_call_id=tool_call_id,
+                )
+            )
+
     # Store Gmail operations in memory
     if gmail_operations:
         operation_summary = f"Gmail operations performed: {', '.join([op['operation'] for op in gmail_operations])}"

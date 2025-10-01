@@ -12,7 +12,6 @@ import { useAccount } from "@/providers/EmailAccountProvider";
  * - a open assistant drawer (or navigate to /assistant as fallback)
  * - g then i go to Inbox
  * - ? open shortcuts modal (dispatches event)
- * - Hold ⌘ to talk (hint only; MicControl handles long-press)
  */
 export function useShortcuts(opts: {
   getSearchInput?: () => HTMLInputElement | null;

@@ -127,29 +127,39 @@ export function FeaturesPageContent() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden pt-24 pb-12">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-teal-500/10" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)`,
+          backgroundSize: '32px 32px'
+        }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-bold text-white sm:text-5xl md:text-6xl">
               Features That Transform Email
             </h1>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-slate-300 max-w-3xl mx-auto">
               Everything you need to turn your inbox from a burden into your competitive advantage
             </p>
           </motion.div>
         </div>
+
+        {/* Bottom Gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
 
       {/* Feature Categories */}
       {featureCategories.map((category, categoryIndex) => (
         <section
           key={category.title}
-          className={`py-16 ${categoryIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+          className={`py-24 ${categoryIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -157,17 +167,17 @@ export function FeaturesPageContent() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center mb-16"
             >
               <h2 className="text-3xl font-bold text-gray-900">
                 {category.title}
               </h2>
-              <p className="mt-4 text-lg text-gray-600">
+              <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
                 {category.description}
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
               {category.features.map((feature, index) => (
                 <motion.div
                   key={feature.title}
@@ -175,49 +185,95 @@ export function FeaturesPageContent() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="flex gap-4"
+                  className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300"
                 >
-                  <div className="flex-shrink-0">
-                    <div className="p-3 bg-[#1a365d] bg-opacity-10 rounded-lg">
-                      <feature.icon className="h-6 w-6 text-[#1a365d]" />
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="p-3 bg-gradient-to-r from-primary/10 to-teal-500/10 rounded-lg">
+                        <feature.icon className="h-6 w-6 text-[#1a365d]" />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600">
-                      {feature.description}
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-600 leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </div>
+
+            {/* Mid-section CTA for every other category */}
+            {categoryIndex % 2 === 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="bg-gradient-to-r from-primary/5 to-teal-500/5 rounded-xl p-8">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    Ready to Experience {category.title}?
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    See how these features work together to transform your email workflow
+                  </p>
+                  <a
+                    href="/login"
+                    className="inline-flex items-center px-6 py-3 text-base font-medium rounded-lg bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Try It Free
+                  </a>
+                </div>
+              </motion.div>
+            )}
           </div>
         </section>
       ))}
 
       {/* CTA Section */}
-      <section className="py-16 bg-[#1a365d]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-teal-500/10" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)`,
+          backgroundSize: '32px 32px'
+        }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-4xl font-bold text-white mb-6">
               Ready to Experience These Features?
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
-              Start your free trial today and see the difference AI can make
+            <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto">
+              Start your free trial today and see the difference AI can make for your email productivity
             </p>
-            <a
-              href="/login"
-              className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-[#1a365d] bg-white hover:bg-gray-100"
-            >
-              Start Free Trial
-            </a>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="/login"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Start Free Trial
+              </a>
+              <a
+                href="/how-it-works"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-transparent border-2 border-white hover:bg-white/10 transition-all duration-300"
+              >
+                Learn How It Works
+              </a>
+            </div>
+            <p className="mt-6 text-sm text-slate-400">
+              No credit card required • Setup in 2 minutes
+            </p>
           </motion.div>
         </div>
       </section>

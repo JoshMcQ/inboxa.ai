@@ -11,19 +11,17 @@ import { refetchEmailListAtom } from "@/store/email";
 import { ClientOnly } from "@/components/ClientOnly";
 import { PermissionsCheck } from "@/app/app-layout/[emailAccountId]/PermissionsCheck";
 import { cn } from "@/utils";
-import { 
+import {
   Bot,
   Clock,
   Mail as MailIcon,
   Search,
   Radio,
-  Mic,
   RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { VoiceOrchestrator } from "@/components/voice/VoiceOrchestrator";
 import { useParams } from "next/navigation";
 
 // No demo data - using real Gmail threads only
@@ -160,12 +158,43 @@ function VoiceNativeMailInterface({
   const params = useParams();
   const emailAccountId = params?.emailAccountId as string;
   const [searchQuery, setSearchQuery] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [voiceMode, setVoiceMode] = useState(false);
+  const [showSummaries, setShowSummaries] = useState(false);
+  const [summaries, setSummaries] = useState<string[]>([]);
+  const [summarizing, setSummarizing] = useState(false);
 
-  const handleVoiceSearch = () => {
-    setIsListening(!isListening);
-    // In real implementation, this would start/stop voice recognition
+  const generateAISummaries = async () => {
+    if (!allThreads || allThreads.length === 0) return;
+
+    setSummarizing(true);
+    try {
+      // Take the first 5 threads for summarization to avoid too many API calls
+      const threadsToSummarize = allThreads.slice(0, 5);
+      const summaryPromises = threadsToSummarize.map(async (thread) => {
+        const response = await fetch('/api/ai/summarise', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            textPlain: thread.snippet || '',
+            textHtml: thread.snippet || '',
+          }),
+        });
+
+        if (response.ok) {
+          return await response.text();
+        }
+        return `Summary unavailable for: ${thread.snippet?.slice(0, 50)}...`;
+      });
+
+      const results = await Promise.all(summaryPromises);
+      setSummaries(results);
+      setShowSummaries(true);
+    } catch (error) {
+      console.error('Error generating summaries:', error);
+    } finally {
+      setSummarizing(false);
+    }
   };
 
   return (
@@ -177,94 +206,69 @@ function VoiceNativeMailInterface({
             <div className="flex items-center gap-3">
               <Radio size={32} className="text-primary" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Voice Mail</h1>
+                <h1 className="text-2xl font-bold text-foreground">Mail</h1>
                 <p className="text-muted-foreground">AI-powered email conversations</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Button
-                variant={voiceMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setVoiceMode(!voiceMode)}
-                className="gap-2"
-              >
-                <Mic size={16} />
-                Voice Mode
-              </Button>
-              <Button
                 variant="outline"
                 size="sm"
                 className="gap-2"
+                onClick={generateAISummaries}
+                disabled={summarizing || allThreads.length === 0}
               >
                 <Bot size={16} />
-                AI Summaries
+                {summarizing ? "Generating..." : "AI Summaries"}
               </Button>
             </div>
           </div>
 
-          {/* Voice Search */}
+          {/* Search */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-2xl">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 size-5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search conversations or say 'Hey InboxAI'..."
+                placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-16 py-4 bg-accent/20 border-2 border-transparent rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/30 focus:bg-background transition-all"
+                className="w-full pl-12 pr-4 py-4 bg-accent/20 border-2 border-transparent rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/30 focus:bg-background transition-all"
               />
-              <Button
-                size="sm"
-                variant={isListening ? "default" : "ghost"}
-                className={cn(
-                  "absolute right-2 top-1/2 transform -translate-y-1/2 gap-2",
-                  isListening && "bg-red-500 text-white animate-pulse"
-                )}
-                onClick={handleVoiceSearch}
-              >
-                <Mic size={16} />
-                {isListening ? "Listening..." : "Voice"}
-              </Button>
             </div>
           </div>
         </div>
 
-        {/* AI Processing Status */}
-        {voiceMode && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-border p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="size-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-medium text-green-700">AI Assistant Active</span>
-                </div>
-                <Badge variant="outline" className="bg-white/50">
-                  Processing 3 threads
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock size={14} />
-                <span>Real-time analysis enabled</span>
-              </div>
+        {/* AI Summaries Panel */}
+        {showSummaries && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">AI Email Summaries</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSummaries(false)}
+              >
+                ×
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {summaries.map((summary, index) => (
+                <Card key={index} className="p-4">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    Email {index + 1}
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {summary}
+                  </div>
+                </Card>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Voice-First Experience Layout */}
-        {voiceMode ? (
-          <div className="p-6">
-            {/* Voice Orchestrator - The complete "Speak & See" experience */}
-            <ClientOnly>
-              <VoiceOrchestrator
-                emailAccountId={emailAccountId}
-                isActive={voiceMode}
-                className="h-[600px]"
-              />
-            </ClientOnly>
-          </div>
-        ) : (
-          /* Traditional Email List View */
-          <div className="p-6">
+        {/* Email List View */}
+        <div className="p-6">
             <LoadingContent loading={isLoading} error={error}>
               {allThreads && allThreads.length > 0 ? (
                 <div className="space-y-6">
@@ -300,8 +304,7 @@ function VoiceNativeMailInterface({
               </Card>
             )}
             </LoadingContent>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

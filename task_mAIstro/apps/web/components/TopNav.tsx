@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import {
   Menu,
   MenuButton,
@@ -21,7 +21,6 @@ import {
   ShieldCheckIcon,
   TagIcon,
   SearchIcon,
-  MicIcon,
   PlusIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ import { prefixPath } from "@/utils/path";
 import { useAccount } from "@/providers/EmailAccountProvider";
 import { ProfileImage } from "@/components/ProfileImage";
 import { useComposeModal } from "@/providers/ComposeModalProvider";
-import { MicControl } from "@/components/mic/MicControl";
 import { useShortcuts } from "@/hooks/useShortcuts";
 import { useGmailStatus } from "@/hooks/useGmailStatus";
 
@@ -42,22 +40,8 @@ export function TopNav({ trigger }: { trigger: React.ReactNode }) {
   const { onOpen: openCompose } = useComposeModal();
   const searchRef = useRef<HTMLInputElement | null>(null);
 
-  // Header mic state (Idle / Listening / Transcribing/Muted)
-  const [micState, setMicState] = useState<"idle" | "listening" | "transcribing" | "muted">("idle");
-
   // Gmail status pill
   const gmail = useGmailStatus({ refreshMs: 60_000, emailAccountId });
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as string | undefined;
-      if (detail === "listening" || detail === "transcribing" || detail === "idle" || detail === "muted") {
-        setMicState(detail);
-      }
-    };
-    window.addEventListener("mic:state", handler as EventListener);
-    return () => window.removeEventListener("mic:state", handler as EventListener);
-  }, []);
 
   function handleSearchSubmit(formData: FormData) {
     const q = (formData.get("q") as string)?.trim();
@@ -71,16 +55,6 @@ export function TopNav({ trigger }: { trigger: React.ReactNode }) {
     getSearchInput: () => searchRef.current,
     onCompose: openCompose,
   });
-
-  // Mic state dot color
-  const micDotClass =
-    micState === "listening"
-      ? "bg-indigo-600 animate-pulse"
-      : micState === "muted"
-      ? "bg-gray-400"
-      : micState === "transcribing"
-      ? "bg-indigo-600"
-      : "bg-gray-300";
 
   return (
     <div className="content-container flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white shadow-sm sm:gap-x-6">
@@ -111,20 +85,6 @@ export function TopNav({ trigger }: { trigger: React.ReactNode }) {
           <PlusIcon className="mr-2 h-4 w-4" />
           Compose
         </Button>
-
-        {/* Persistent Mic (icon button with state dot) */}
-        <MicControl emailAccountId={emailAccountId}>
-          <Button variant="ghost" size="icon" aria-label="Voice" title="Hold ⌘ to talk" className="relative">
-            <MicIcon className="h-5 w-5" />
-            <span
-              aria-hidden="true"
-              className={cn(
-                "absolute -right-0.5 -top-0.5 inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white",
-                micDotClass,
-              )}
-            />
-          </Button>
-        </MicControl>
 
         {/* Right cluster */}
         <div className="ml-auto flex items-center gap-x-3 lg:gap-x-4">

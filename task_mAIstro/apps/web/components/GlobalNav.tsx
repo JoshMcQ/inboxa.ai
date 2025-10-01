@@ -13,7 +13,6 @@ import {
   PuzzleIcon,
   SettingsIcon,
   CommandIcon,
-  MicIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/providers/EmailAccountProvider";
@@ -101,10 +100,6 @@ export function GlobalNav({ className }: GlobalNavProps) {
             </div>
             <div className="font-semibold text-sidebar-foreground">Inboxa.ai</div>
           </div>
-          
-          <Button size="sm" variant="ghost" className="size-8 p-0">
-            <MicIcon className="size-4 text-teal-500" />
-          </Button>
         </div>
         
         {/* Omnisearch */}

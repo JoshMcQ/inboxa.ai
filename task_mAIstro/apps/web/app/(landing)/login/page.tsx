@@ -82,7 +82,17 @@ export default async function AuthenticationPage(props: {
 }
 
 function ErrorAlert({ error, loggedIn }: { error: string; loggedIn: boolean }) {
-  if (error === "RequiresReconsent") return null;
+  if (error === "RequiresReconsent") {
+    return (
+      <>
+        <AlertBasic
+          title="Reconnect Google"
+          description="We need your permission again to access Gmail. Please sign in with Google above to reconnect."
+        />
+        <AutoLogOut loggedIn={loggedIn} />
+      </>
+    );
+  }
 
   if (error === "OAuthAccountNotLinked") {
     return (

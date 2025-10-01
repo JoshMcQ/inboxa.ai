@@ -91,37 +91,47 @@ export function EnterprisePageContent() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden pt-24 pb-12">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-teal-500/10" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)`,
+          backgroundSize: '32px 32px'
+        }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-bold text-white sm:text-5xl md:text-6xl">
               Built for Scale, Security, and Control
             </h1>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-              Transform email for your entire organization with enterprise-grade security, 
+            <p className="mt-4 text-xl text-slate-300 max-w-3xl mx-auto">
+              Transform email for your entire organization with enterprise-grade security,
               compliance, and dedicated support.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
-                className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-white bg-[#1a365d] hover:bg-[#2c5282]"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Request Demo
               </Link>
               <Link
                 href="/security"
-                className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-[#1a365d] bg-white border border-gray-300 hover:bg-gray-50"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-transparent border-2 border-white hover:bg-white/10 transition-all duration-300"
               >
                 View Security Details
               </Link>
             </div>
           </motion.div>
         </div>
+
+        {/* Bottom Gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
 
       {/* Enterprise Features */}
@@ -308,7 +318,7 @@ export function EnterprisePageContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-[#1a365d]">
+      <section className="py-16 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -319,19 +329,19 @@ export function EnterprisePageContent() {
             <h2 className="text-3xl font-bold text-white mb-4">
               Ready to Transform Email for Your Organization?
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-slate-300 mb-8">
               Let's discuss how InboxaAI can help your team save time and work smarter
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
-                className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-[#1a365d] bg-white hover:bg-gray-100"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Request Demo
               </Link>
               <Link
                 href="/roi-calculator"
-                className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-white bg-transparent border-2 border-white hover:bg-white/10"
+                className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-transparent border-2 border-white hover:bg-white/10 transition-all duration-300"
               >
                 Calculate Your ROI
               </Link>

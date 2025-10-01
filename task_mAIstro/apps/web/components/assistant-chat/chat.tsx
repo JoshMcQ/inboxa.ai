@@ -10,7 +10,6 @@ import {
   HistoryIcon,
   Loader2,
   PlusIcon,
-  MicIcon,
 } from "lucide-react";
 import { parseAsString, useQueryState, useQueryStates } from "nuqs";
 import { MultimodalInput } from "@/components/assistant-chat/multimodal-input";
@@ -29,13 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { useChats } from "@/hooks/useChats";
 import { LoadingContent } from "@/components/LoadingContent";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -44,7 +36,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExamplesDialog } from "@/components/assistant-chat/examples-dialog";
 import { Tooltip } from "@/components/Tooltip";
 import { toastError } from "@/components/Toast";
-import { VoiceCommand } from "@/components/VoiceCommand";
 
 // Some mega hacky code used here to workaround AI SDK's use of SWR
 // AI SDK uses SWR too and this messes with the global SWR config
@@ -208,7 +199,6 @@ function ChatUI({
           )}
 
           <div className="flex items-center gap-1">
-            <VoiceCommandButton setInput={setInput} emailAccountId={emailAccountId} />
             <NewChatButton />
             <ExamplesDialog setInput={setInput} />
             <ChatHistoryDropdown />
@@ -274,42 +264,6 @@ function OpenArtifactButton() {
         <span className="sr-only">Open side panel</span>
       </Button>
     </Tooltip>
-  );
-}
-
-function VoiceCommandButton({ 
-  setInput, 
-  emailAccountId 
-}: { 
-  setInput: (input: string) => void;
-  emailAccountId: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleVoiceResponse = (response: string) => {
-    setInput(response);
-    setIsOpen(false);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip content="🎤 Voice Assistant - New!">
-        <DialogTrigger asChild>
-          <Button variant="default" size="icon" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
-            <MicIcon className="size-5" />
-            <span className="sr-only">Voice Assistant</span>
-          </Button>
-        </DialogTrigger>
-      </Tooltip>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>🎤 InboxA.AI Voice Assistant</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col items-center space-y-4 py-4">
-          <VoiceCommand onResponse={handleVoiceResponse} emailAccountId={emailAccountId} />
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 

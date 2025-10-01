@@ -1,6 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config();
 
 // Configuration
 const API_BASE = process.env.API_BASE || "http://localhost:3000/api/v1";

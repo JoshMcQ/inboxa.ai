@@ -20,7 +20,6 @@ import {
   type LucideIcon,
   MailsIcon,
   MessagesSquareIcon,
-  MicIcon,
   PenIcon,
   PersonStandingIcon,
   PuzzleIcon,

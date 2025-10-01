@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Internal payload:', JSON.stringify(body, null, 2));
     
-    const { userMessage, emailAccountId, userId, conversationId, userTimezone } = body;
+    const { userMessage, emailAccountId, userId, conversationId, userTimezone, fastLaneMode } = body;
     
     if (!userMessage || !emailAccountId || !userId) {
       console.error('Missing required fields:', { userMessage: !!userMessage, emailAccountId: !!emailAccountId, userId: !!userId });
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Parse intent for deterministic hints; always pass hints to LangGraph.
     // We disable fast lane here for reliability unless explicitly enabled.
-    const FAST_LANE_MODE = process.env.FAST_LANE_MODE || 'off'; // off | precise_only | full
+    const FAST_LANE_MODE = (fastLaneMode as string | undefined)?.toLowerCase() || process.env.FAST_LANE_MODE || 'off'; // off | precise_only | full
     const parsed = parseFastIntent(userMessage);
     let hints: any = {};
     if (parsed) {
@@ -148,8 +148,22 @@ export async function POST(request: NextRequest) {
         userKey,
       });
       if (fast) {
+        console.log('[Voice][FastLane] HIT', {
+          mode: FAST_LANE_MODE,
+          userId,
+          emailAccountId,
+          conversationId,
+          query: userMessage,
+        });
         return NextResponse.json({ response: fast, conversation_id: conversationId, fast: true });
       }
+      console.log('[Voice][FastLane] MISS', {
+        mode: FAST_LANE_MODE,
+        userId,
+        emailAccountId,
+        conversationId,
+        query: userMessage,
+      });
     }
 
     // Forward to LangGraph system with authentication context
@@ -186,7 +200,13 @@ export async function POST(request: NextRequest) {
       enable_voice: false
     };
 
-    console.log('Calling LangGraph with authenticated payload');
+    console.log('[Voice][LangGraph] Calling graph', {
+      userId,
+      emailAccountId,
+      conversationId,
+      query: userMessage,
+      hints,
+    });
 
     // Call LangGraph system
     const response = await fetch(`${langgraphUrl}/runs/stream`, {
@@ -243,7 +263,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('LangGraph response:', fullResponse);
+    console.log('[Voice][LangGraph] Final response', {
+      userId,
+      emailAccountId,
+      conversationId,
+      response: fullResponse,
+      lastError,
+    });
     
     // If there was an error but we got some response, include both
     if (lastError && fullResponse) {
@@ -414,7 +440,7 @@ async function tryFastEmailLookup({
       if (messages && messages.length > 0 && messages[0].id) { hitId = messages[0].id; break; }
     }
     if (!hitId) {
-      return `I couldn’t find any matching emails${senderText ? ` from ${senderText}` : ''}${intent.day ? ` ${intent.day}` : intent.explicitDate ? ' on that date' : ''}.`;
+      return null;
     }
     const full = await getMessage(hitId, gmail, 'full');
     const parsed = parseMessage(full);

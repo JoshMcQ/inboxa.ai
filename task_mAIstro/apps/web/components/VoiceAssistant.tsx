@@ -547,7 +547,7 @@ export function VoiceAssistant({ className, showTransparentAgent = true }: Voice
                 Ready to help with your emails
               </h3>
               <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                Tap the microphone and speak naturally. Try saying "Read my emails" or "Send an email to John"
+                Use the ElevenLabs voice widget in the bottom right to speak naturally to your assistant.
               </p>
               
               {/* Quick Action Suggestions */}
@@ -759,25 +759,8 @@ export function VoiceAssistant({ className, showTransparentAgent = true }: Voice
           {connectionStatus === 'connected' && messages.length === 0 && (
             <div className="mt-4 text-center">
               <p className="text-xs text-muted-foreground mb-2">
-                Try these voice commands:
+                Use the ElevenLabs widget for voice commands
               </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {[
-                  '"Read my unread emails"',
-                  '"Reply to Sarah"',
-                  '"Archive all newsletters"',
-                  '"Show me emails from yesterday"'
-                ].map((command, index) => (
-                  <Badge 
-                    key={index} 
-                    variant="secondary" 
-                    className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                    onClick={() => processVoiceCommand(command.replace(/"/g, ''))}
-                  >
-                    {command}
-                  </Badge>
-                ))}
-              </div>
             </div>
           )}
         </div>

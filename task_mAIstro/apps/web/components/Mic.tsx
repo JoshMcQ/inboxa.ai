@@ -91,20 +91,13 @@ export function Mic({
             </Button>
           </div>
         </TooltipTrigger>
-        <TooltipContent 
-          side="bottom" 
+        <TooltipContent
+          side="bottom"
           className="max-w-xs p-3 text-sm"
           sideOffset={8}
         >
           <div className="space-y-2">
-            <div className="font-medium">Try saying:</div>
-            <ul className="space-y-1">
-              {currentCommands.map((command, index) => (
-                <li key={index} className="text-gray-600">
-                  "{command}"
-                </li>
-              ))}
-            </ul>
+            <div className="font-medium">Use ElevenLabs voice widget for voice commands</div>
           </div>
         </TooltipContent>
       </Tooltip>

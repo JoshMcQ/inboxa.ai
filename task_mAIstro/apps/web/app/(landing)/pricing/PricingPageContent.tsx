@@ -107,22 +107,32 @@ export function PricingPageContent() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden pt-24 pb-12">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-teal-500/10" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)`,
+          backgroundSize: '32px 32px'
+        }} />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-bold text-white sm:text-5xl md:text-6xl">
               Simple, Transparent Pricing
             </h1>
-            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-slate-300 max-w-3xl mx-auto">
               Choose the plan that fits your needs. All plans include a 14-day free trial.
             </p>
           </motion.div>
         </div>
+
+        {/* Bottom Gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
 
       {/* Pricing Cards */}
@@ -238,7 +248,7 @@ export function PricingPageContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-[#1a365d]">
+      <section className="py-16 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -249,12 +259,12 @@ export function PricingPageContent() {
             <h2 className="text-3xl font-bold text-white mb-4">
               Ready to Transform Your Email?
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-slate-300 mb-8">
               Start your 14-day free trial today. No credit card required.
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center px-8 py-3 text-base font-medium rounded-md text-[#1a365d] bg-white hover:bg-gray-100"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Start Free Trial
             </Link>

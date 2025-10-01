@@ -2,11 +2,8 @@ import Link from "next/link";
 import prisma from "@/utils/prisma";
 import { getPaginatedThreadTrackers } from "@/app/app-layout/[emailAccountId]/r-zero/fetch-trackers";
 import { ThreadTrackerType } from "@prisma/client";
-import { MicControl } from "@/components/mic/MicControl";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { prefixPath } from "@/utils/path";
-import { Mic } from "@/components/Mic";
 import { ActionCard } from "@/components/ActionCard";
 import {
   MailIcon,
@@ -78,7 +75,7 @@ export default async function TodayPage(props: {
       </div>
       
       <div className="section-gap">
-        <VoiceTriageCard emailAccountId={emailAccountId} />
+        <VoiceTriageCard />
       </div>
       
       {/* Action Cards Stack */}
@@ -196,19 +193,16 @@ function StatusChip({
 
 /* Voice Triage Primary CTA */
 
-function VoiceTriageCard({ emailAccountId }: { emailAccountId: string }) {
+function VoiceTriageCard() {
   return (
-    <div className="action-card flex items-center justify-between">
-      <div>
-        <h3 className="font-semibold text-gray-900 mb-1">Start voice triage</h3>
-        <p className="text-sm text-gray-600">Summarize, reply, and clean up—all by voice</p>
+    <div className="action-card space-y-2">
+      <h3 className="font-semibold text-gray-900">Start voice triage</h3>
+      <p className="text-sm text-gray-600">
+        Summarize, reply, and clean up—all by voice. Use the ElevenLabs voice widget to begin a session.
+      </p>
+      <div className="text-xs text-gray-500">
+        Tip: open the floating voice orb, then say "Read my unread emails" or "Clean promos older than 30 days."
       </div>
-      <MicControl emailAccountId={emailAccountId}>
-        <Button className="btn-primary flex items-center gap-2">
-          <Mic state="idle" size="sm" className="w-5 h-5" />
-          Start triage
-        </Button>
-      </MicControl>
     </div>
   );
 }

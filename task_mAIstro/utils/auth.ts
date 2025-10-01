@@ -13,12 +13,49 @@ import { captureException } from "@/utils/error";
 import { createScopedLogger } from "@/utils/logger";
 import { SCOPES } from "@/utils/gmail/scopes";
 import { getContactsClient } from "@/utils/gmail/client";
-import { encryptToken } from "@/utils/encryption";
+import { encryptToken, TokenEncryptionError } from "@/utils/encryption";
 import { updateAccountSeats } from "@/utils/premium/server";
 import { createReferral } from "@/utils/referral/referral-code";
 import { trackDubSignUp } from "@/utils/dub";
 
 const logger = createScopedLogger("auth");
+
+export class MissingRefreshTokenError extends Error {
+  constructor(message = "Missing refresh token") {
+    super(message);
+    this.name = "MissingRefreshTokenError";
+  }
+}
+
+async function clearAccountTokens({
+  providerAccountId,
+}: {
+  providerAccountId: string;
+}) {
+  try {
+    await prisma.account.update({
+      where: {
+        provider_providerAccountId: {
+          provider: "google",
+          providerAccountId,
+        },
+      },
+      data: {
+        refresh_token: null,
+        access_token: null,
+        expires_at: null,
+      },
+    });
+  } catch (error) {
+    logger.error("Failed to clear stale Google account tokens", {
+      providerAccountId,
+      error,
+    });
+    captureException(error, {
+      extra: { providerAccountId, location: "clearAccountTokens" },
+    });
+  }
+}
 
 export const getAuthOptions: (options?: {
   consent: boolean;
@@ -341,16 +378,36 @@ const refreshAccessToken = async (token: JWT): Promise<JWT> => {
     return { error: "MissingAccountError" };
   }
 
-  if (!account?.refresh_token) {
+  const jwtRefreshToken =
+    typeof token.refresh_token === "string" ? token.refresh_token : null;
+  const refreshToken = account?.refresh_token ?? jwtRefreshToken;
+
+  if (!refreshToken) {
     logger.error("No refresh token found in database", {
       email: token.email,
       userId: account.userId,
       providerAccountId: account.providerAccountId,
     });
+
+    await clearAccountTokens({
+      providerAccountId: account.providerAccountId,
+    });
+
     return {
       ...token,
+      refresh_token: undefined,
+      access_token: undefined,
+      expires_at: undefined,
       error: "RequiresReconsent",
     };
+  }
+
+  if (!account.refresh_token && jwtRefreshToken) {
+    logger.warn("Rehydrating refresh token from existing session", {
+      email: token.email,
+      userId: account.userId,
+      providerAccountId: account.providerAccountId,
+    });
   }
 
   logger.info("Refreshing access token", { email: token.email });
@@ -362,7 +419,7 @@ const refreshAccessToken = async (token: JWT): Promise<JWT> => {
         client_id: env.GOOGLE_CLIENT_ID,
         client_secret: env.GOOGLE_CLIENT_SECRET,
         grant_type: "refresh_token",
-        refresh_token: account.refresh_token,
+        refresh_token: refreshToken,
       }),
       method: "POST",
     });
@@ -371,9 +428,31 @@ const refreshAccessToken = async (token: JWT): Promise<JWT> => {
       expires_in: number;
       access_token: string;
       refresh_token: string;
+      error?: string;
+      error_description?: string;
     } = await response.json();
 
-    if (!response.ok) throw tokens;
+    if (!response.ok) {
+      // Handle specific token errors
+      if (tokens.error === "invalid_grant") {
+        logger.error("Refresh token expired or revoked, clearing token", {
+          email: token.email,
+          error: tokens.error,
+          error_description: tokens.error_description,
+        });
+
+        // Clear the invalid refresh token from database
+        await clearAccountTokens({
+          providerAccountId: account.providerAccountId,
+        });
+
+        return {
+          ...token,
+          error: "RequiresReconsent",
+        };
+      }
+      throw tokens;
+    }
 
     const expires_at = calculateExpiresAt(tokens.expires_in);
     logger.info("New token expires at", {
@@ -385,7 +464,7 @@ const refreshAccessToken = async (token: JWT): Promise<JWT> => {
 
     await saveTokens({
       tokens: { ...tokens, expires_at },
-      accountRefreshToken: account.refresh_token,
+      accountRefreshToken: refreshToken,
       providerAccountId: account.providerAccountId,
     });
 
@@ -399,6 +478,25 @@ const refreshAccessToken = async (token: JWT): Promise<JWT> => {
       error: undefined,
     };
   } catch (error) {
+    if (error instanceof MissingRefreshTokenError) {
+      logger.error("Missing refresh token during refresh", {
+        email: token.email,
+        providerAccountId: account.providerAccountId,
+      });
+
+      await clearAccountTokens({
+        providerAccountId: account.providerAccountId,
+      });
+
+      return {
+        ...token,
+        access_token: undefined,
+        refresh_token: undefined,
+        expires_at: undefined,
+        error: "RequiresReconsent",
+      };
+    }
+
     logger.error("Error refreshing access token", {
       email: token.email,
       error,
@@ -442,11 +540,15 @@ export async function saveTokens({
   const refreshToken = tokens.refresh_token ?? accountRefreshToken;
 
   if (!refreshToken) {
-    logger.error("Attempted to save null refresh token", { providerAccountId });
-    captureException("Cannot save null refresh token", {
-      extra: { providerAccountId },
+    const error = new MissingRefreshTokenError();
+    logger.error("Attempted to save null refresh token", {
+      providerAccountId,
+      emailAccountId,
     });
-    return;
+    captureException(error, {
+      extra: { providerAccountId, emailAccountId },
+    });
+    throw error;
   }
 
   const data = {
@@ -455,31 +557,38 @@ export async function saveTokens({
     refresh_token: refreshToken,
   };
 
-  if (emailAccountId) {
-    // Encrypt tokens in data directly
-    // Usually we do this in prisma-extensions.ts but we need to do it here because we're updating the account via the emailAccount
-    // We could also edit prisma-extensions.ts to handle this case but this is easier for now
-    if (data.access_token)
-      data.access_token = encryptToken(data.access_token) || undefined;
-    if (data.refresh_token)
-      data.refresh_token = encryptToken(data.refresh_token) || "";
+  try {
+    if (emailAccountId) {
+      if (data.access_token) {
+        const encryptedAccessToken = encryptToken(data.access_token);
+        if (!encryptedAccessToken) {
+          throw new TokenEncryptionError("Failed to encrypt access token");
+        }
+        data.access_token = encryptedAccessToken;
+      }
+      if (data.refresh_token) {
+        const encryptedRefreshToken = encryptToken(data.refresh_token);
+        if (!encryptedRefreshToken) {
+          throw new TokenEncryptionError("Failed to encrypt refresh token");
+        }
+        data.refresh_token = encryptedRefreshToken;
+      }
 
-    await prisma.emailAccount.update({
-      where: { id: emailAccountId },
-      data: { account: { update: data } },
-    });
-  } else {
-    if (!providerAccountId) {
-      logger.error("No providerAccountId found in database", {
-        emailAccountId,
-      });
-      captureException("No providerAccountId found in database", {
-        extra: { emailAccountId },
+      await prisma.emailAccount.update({
+        where: { id: emailAccountId },
+        data: { account: { update: data } },
       });
       return;
     }
 
-    return await prisma.account.update({
+    if (!providerAccountId) {
+      const error = new Error("No providerAccountId provided for token save");
+      logger.error(error.message, { emailAccountId });
+      captureException(error, { extra: { emailAccountId } });
+      throw error;
+    }
+
+    await prisma.account.update({
       where: {
         provider_providerAccountId: {
           provider: "google",
@@ -488,6 +597,16 @@ export async function saveTokens({
       },
       data,
     });
+  } catch (error) {
+    logger.error("Failed to persist Google auth tokens", {
+      providerAccountId,
+      emailAccountId,
+      error,
+    });
+    captureException(error, {
+      extra: { providerAccountId, emailAccountId, location: "saveTokens" },
+    });
+    throw error;
   }
 }
 

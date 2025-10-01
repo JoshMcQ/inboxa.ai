@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mic } from "@/components/Mic";
 import {
   CheckCircleIcon,
   MailIcon,
@@ -42,8 +41,8 @@ const steps: OnboardingStep[] = [
   },
   {
     id: 2,
-    title: "Enable Voice",
-    description: "Set up voice commands and preferences",
+    title: "Setup Voice",
+    description: "Configure the ElevenLabs voice widget",
     icon: <MicIcon className="w-6 h-6" />,
     component: EnableVoiceStep,
   },
@@ -217,10 +216,10 @@ function EnableVoiceStep({ onNext, onBack }: { onNext: () => void; onBack: () =>
       <div className="text-center">
         <MicIcon className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Enable voice commands
+          Setup voice assistant
         </h2>
         <p className="text-gray-600">
-          Use your voice to triage emails, draft replies, and manage your inbox hands-free.
+          InboxA.ai uses the ElevenLabs voice widget. This appears as a floating orb in the bottom right corner of the app for natural voice conversations.
         </p>
       </div>
 
@@ -255,20 +254,13 @@ function EnableVoiceStep({ onNext, onBack }: { onNext: () => void; onBack: () =>
             <span className="text-xs font-medium text-white">2</span>
           </div>
           <div className="flex-1">
-            <div className="font-medium text-gray-900">Voice Test</div>
-            <div className="text-sm text-gray-600">Test your microphone</div>
+            <div className="font-medium text-gray-900">Widget Check</div>
+            <div className="text-sm text-gray-600">Look for the ElevenLabs orb in the bottom right corner</div>
           </div>
           {hasPermission && (
-            <div className="flex items-center gap-2">
-              <Mic 
-                size="sm" 
-                state={testing ? "listening" : "idle"}
-                onToggle={handleTestVoice}
-              />
-              <Button onClick={handleTestVoice} disabled={testing} size="sm">
-                {testing ? 'Listening...' : 'Test'}
-              </Button>
-            </div>
+            <Button onClick={handleTestVoice} disabled={testing} size="sm">
+              {testing ? 'Testing...' : 'Play sample' }
+            </Button>
           )}
         </div>
       </div>
