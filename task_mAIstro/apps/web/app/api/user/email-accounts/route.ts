@@ -15,6 +15,8 @@ async function getEmailAccounts({ userId }: { userId: string }) {
       accountId: true,
       name: true,
       image: true,
+      lastSummaryCheckAt: true,
+      summaryPreferences: true,
       user: {
         select: {
           name: true,

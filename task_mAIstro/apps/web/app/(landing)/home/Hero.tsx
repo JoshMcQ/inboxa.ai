@@ -4,8 +4,23 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MicIcon, ArrowRightIcon, CheckCircleIcon } from "lucide-react";
-import { ReactNode, useEffect } from "react";
+import {
+  ReactNode,
+  useEffect,
+  DetailedHTMLProps,
+  HTMLAttributes,
+  createElement,
+} from "react";
 import Script from "next/script";
+
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'elevenlabs-convai': DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
 
 interface HeroHomeProps {
   title?: ReactNode;
@@ -68,14 +83,14 @@ function ElevenLabsWidget() {
       `}</style>
       <div className="hero-elevenlabs-widget flex justify-center">
         <div className="w-full max-w-md">
-          <elevenlabs-convai
-            agent-id="agent_4401k5qqt805f9391dnee7nrbm64"
-            variant="full"
-            placement="top-right"
-            always-expanded="true"
-            default-expanded="true"
-            show-avatar-when-collapsed="false"
-          ></elevenlabs-convai>
+          {createElement('elevenlabs-convai' as any, {
+        'agent-id': 'agent_4401k5qqt805f9391dnee7nrbm64',
+        variant: 'full',
+        placement: 'top-right',
+        'always-expanded': 'true',
+        'default-expanded': 'true',
+        'show-avatar-when-collapsed': 'false',
+      })}
         </div>
       </div>
     </>

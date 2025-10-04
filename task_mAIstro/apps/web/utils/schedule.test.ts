@@ -197,7 +197,7 @@ describe("calculateNextScheduleDate", () => {
     });
 
     it("should find next occurrence on same day if time has passed", () => {
-      const fromDate = new Date("2024-01-15T12:00:00Z"); // Monday 12 PM
+      const fromDate = new Date("2024-01-15T12:00:00"); // Monday 12 PM (local)
       const timeOfDay = createCanonicalTimeOfDay(10, 0);
 
       const result = calculateNextScheduleDate(
@@ -218,7 +218,7 @@ describe("calculateNextScheduleDate", () => {
     });
 
     it("should handle multiple days of week", () => {
-      const fromDate = new Date("2024-01-15T12:00:00Z"); // Monday
+      const fromDate = new Date("2024-01-15T12:00:00"); // Monday (local)
       const timeOfDay = createCanonicalTimeOfDay(9, 0);
 
       const result = calculateNextScheduleDate(

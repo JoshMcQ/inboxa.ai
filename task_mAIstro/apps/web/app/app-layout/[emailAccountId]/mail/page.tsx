@@ -17,12 +17,15 @@ import {
   Mail as MailIcon,
   Search,
   Radio,
-  RefreshCw
+  RefreshCw,
+  SparklesIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import { useParams } from "next/navigation";
+import { prefixPath } from "@/utils/path";
 
 // No demo data - using real Gmail threads only
 
@@ -211,15 +214,14 @@ function VoiceNativeMailInterface({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={generateAISummaries}
-                disabled={summarizing || allThreads.length === 0}
-              >
-                <Bot size={16} />
-                {summarizing ? "Generating..." : "AI Summaries"}
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <Link
+                  href={prefixPath(emailAccountId, "/summaries")}
+                  className="flex items-center gap-2"
+                >
+                  <SparklesIcon size={16} />
+                  AI Summaries
+                </Link>
               </Button>
             </div>
           </div>

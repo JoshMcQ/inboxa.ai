@@ -1,8 +1,14 @@
-declare namespace JSX {
-  interface IntrinsicElements {
-    'elevenlabs-convai': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-      'agent-id'?: string;
-      'dynamic-variables'?: string;
-    };
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "elevenlabs-convai": DetailedHTMLProps<
+        HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >;
+    }
   }
 }
+
+export {};

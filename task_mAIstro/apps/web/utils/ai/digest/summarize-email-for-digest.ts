@@ -1,14 +1,23 @@
 import type { z } from "zod";
-import { chatCompletionObject } from "@/utils/llms";
-import type { EmailAccountWithAI } from "@/utils/llms/types";
 import { createScopedLogger } from "@/utils/logger";
-import type { EmailForLLM } from "@/utils/types";
-import { stringifyEmailSimple } from "@/utils/stringify-email";
+import type { EmailAccountWithAI } from "@/utils/llms/types";
 import { DigestEmailSummarySchema as schema } from "@/app/api/resend/digest/validation";
+import { summarizeThread } from "@/utils/ai/summaries/summarize-thread";
+import type { ThreadSummaryPayload } from "@/app/api/ai/summaries/validation";
 
 const logger = createScopedLogger("summarize-digest-email");
 
 export type AISummarizeResult = z.infer<typeof schema>;
+
+type DigestSummaryMessage = {
+  id: string;
+  threadId?: string;
+  from: string;
+  to: string;
+  subject: string;
+  content: string;
+  date?: Date;
+};
 
 export async function aiSummarizeEmailForDigest({
   ruleName,
@@ -17,53 +26,52 @@ export async function aiSummarizeEmailForDigest({
 }: {
   ruleName: string;
   emailAccount: EmailAccountWithAI;
-  messageToSummarize: EmailForLLM;
+  messageToSummarize: DigestSummaryMessage;
 }): Promise<AISummarizeResult> {
   // If messageToSummarize somehow is null/undefined, default to null.
   if (!messageToSummarize) return null;
 
-  const userMessageForPrompt = messageToSummarize;
-
-  const system = "You are an AI assistant that summarizes emails for a digest.";
-
-  const prompt = `
-Summarize the following email for inclusion in a daily digest email.
-	* This email has already been categorized as: ${ruleName}.
-
-Formatting rules:
-	* If the email contains clearly extractable structured data — such as prices, totals, item names, event titles, dates, times, payment methods, or IDs — return a single object with an "entries" field: a list of 2 ~ 6 relevant "label" and "value" pairs.
-	* Order the entries by importance: start with identifying details and end with totals or amounts (e.g. "Total", "Amount Paid").
-	* Use short, clear labels and concise values. Example: { label: "Total", value: "$29.99" }.
-	* Do not extract notes, summaries, bullet points, or general narrative information into structured fields.
-
-Unstructured fallback:
-	* If the email contains general updates, team notes, meeting summaries, announcements, or freeform text — and does not contain distinct extractable values — return a single 'summary' field with a plain-text paragraph instead.
-	* Only return 'summary' if no clear structure fits. Do not force structure.
-
-Style rules:
-	* Output must be plain text only — no HTML, no tables.
-	* Output only one field: either 'entries' or 'summary', never both.
-	* Keep the content minimal, scannable, and clean.
-<message>
-${stringifyEmailSimple(userMessageForPrompt)}
-</message>
-`.trim();
-
-  logger.trace("Input", { system, prompt });
+  const threadPayload: ThreadSummaryPayload = {
+    threadId: messageToSummarize.threadId || messageToSummarize.id,
+    subject: messageToSummarize.subject,
+    snippet: messageToSummarize.content.slice(0, 160),
+    category: ruleName?.toLowerCase(),
+    isUnread: false,
+    isImportant: false,
+    latestMessageId: messageToSummarize.id,
+    messages: [
+      {
+        id: messageToSummarize.id,
+        from: messageToSummarize.from,
+        to: messageToSummarize.to,
+        date: messageToSummarize.date?.toISOString?.() || undefined,
+        textPlain: messageToSummarize.content,
+        textHtml: undefined,
+      },
+    ],
+  };
 
   try {
-    const aiResponse = await chatCompletionObject({
-      userAi: emailAccount.user,
-      system,
-      prompt,
-      schema,
-      userEmail: emailAccount.email,
-      usageLabel: "Summarize email",
+    const summary = await summarizeThread({
+      thread: threadPayload,
+      emailAccount,
+      since: messageToSummarize.date?.toISOString?.(),
     });
 
-    logger.trace("Result", { response: aiResponse.object });
+    if (summary.keyFacts.length > 0) {
+      return {
+        entries: summary.keyFacts.map((fact) => ({
+          label: fact.label,
+          value: fact.value,
+        })),
+      } as AISummarizeResult;
+    }
 
-    return aiResponse.object as AISummarizeResult;
+    const summaryText = summary.threadBullets.length
+      ? summary.threadBullets.join(" · ")
+      : summary.latestMessageSummary || summary.threadHeadline;
+
+    return { summary: summaryText } as AISummarizeResult;
   } catch (error) {
     logger.error("Failed to summarize email", { error });
     return { summary: undefined };

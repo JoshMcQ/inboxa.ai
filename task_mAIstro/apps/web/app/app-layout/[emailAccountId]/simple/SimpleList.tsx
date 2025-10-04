@@ -279,8 +279,8 @@ function SimpleListRow({
               <>
                 {marketingEmail ? (
                   <Summary
-                    textPlain={message.textPlain}
-                    textHtml={message.textHtml}
+                    message={message}
+                    category="marketing"
                     onViewMore={() => setExpanded(true)}
                   />
                 ) : (

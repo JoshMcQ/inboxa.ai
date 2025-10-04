@@ -62,11 +62,11 @@ export const tinybird = {
 // @inboxzero/tinybird-ai-analytics stubs
 export const tinybirdAiAnalytics = {
   publishAiCall: async (data: any) => {
-    console.warn('@inboxzero/tinybird-ai-analytics not configured - publishAiCall stub');
+    console.warn('@inboxa/tinybird-ai-analytics not configured - publishAiCall stub');
     return Promise.resolve();
   },
   deleteTinybirdAiCalls: async (data: any) => {
-    console.warn('@inboxzero/tinybird-ai-analytics not configured - deleteTinybirdAiCalls stub');
+    console.warn('@inboxa/tinybird-ai-analytics not configured - deleteTinybirdAiCalls stub');
     return Promise.resolve();
   }
 };

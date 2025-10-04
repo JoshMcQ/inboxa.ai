@@ -111,6 +111,8 @@ model EmailAccount {
   statsEmailFrequency   Frequency         @default(WEEKLY)
   summaryEmailFrequency Frequency         @default(WEEKLY)
   lastSummaryEmailAt    DateTime?
+  lastSummaryCheckAt    DateTime?
+  summaryPreferences    Json?
   coldEmailBlocker      ColdEmailSetting?
   coldEmailDigest       Boolean           @default(false)
   coldEmailPrompt       String?
@@ -144,6 +146,7 @@ model EmailAccount {
   plannerTasks   PlannerTask[]
 
   @@index([lastSummaryEmailAt])
+  @@index([lastSummaryCheckAt])
 }
 
 model Digest {

@@ -90,6 +90,11 @@ export const useNavigation = () => {
         icon: InboxIcon,
       },
       {
+        name: "Summaries",
+        href: prefixPath(emailAccountId, "/summaries"),
+        icon: SparklesIcon,
+      },
+      {
         name: "Planner",
         href: prefixPath(emailAccountId, "/planner"),
         icon: BookIcon,
