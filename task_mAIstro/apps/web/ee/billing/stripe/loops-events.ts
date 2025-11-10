@@ -85,7 +85,7 @@ export async function handleLoopsEvents({
     if (directUpgrade) {
       logger.info("Direct upgrade to premium", { email, tier: newTier });
       if (newTier) {
-        await startedTrial(email, newTier);
+        await startedTrial({ email, tier: newTier });
       }
     }
 

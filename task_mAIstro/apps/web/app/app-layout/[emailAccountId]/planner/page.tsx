@@ -113,7 +113,13 @@ export default function PlannerPage() {
         return;
       }
       const data = await response.json();
-      setTasks(data.tasks || []);
+      // Convert date strings to Date objects
+      const tasksWithDates = (data.tasks || []).map((task: any) => ({
+        ...task,
+        dueDate: new Date(task.dueDate),
+        createdAt: new Date(task.createdAt),
+      }));
+      setTasks(tasksWithDates);
     } catch (error) {
       console.warn('Failed to load tasks from backend, using mock data:', error);
       setTasks(MOCK_TASKS);

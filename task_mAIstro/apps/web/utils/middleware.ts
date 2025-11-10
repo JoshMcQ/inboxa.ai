@@ -152,14 +152,14 @@ async function emailAccountMiddleware(
     try {
       const authData = JSON.parse(internalAuth);
       const { userId, emailAccountId, email } = authData;
-      
+
       if (!userId || !emailAccountId || !email) {
         return NextResponse.json(
           { error: "Invalid internal auth data", isKnownError: true },
           { status: 403 },
         );
       }
-      
+
       // Create a new request with email account info
       const emailAccountReq = req.clone() as RequestWithEmailAccount;
       emailAccountReq.auth = { userId, emailAccountId, email };
@@ -170,6 +170,34 @@ async function emailAccountMiddleware(
         { status: 403 },
       );
     }
+  }
+
+  // Check for individual auth headers (for ElevenLabs webhook tools)
+  const headerUserId = req.headers.get("x-user-id");
+  const headerEmailAccountId = req.headers.get("x-email-account-id");
+
+  if (headerUserId && headerEmailAccountId) {
+    // Validate and get the email account
+    const email = await getEmailAccount({
+      userId: headerUserId,
+      emailAccountId: headerEmailAccountId
+    });
+
+    if (!email) {
+      return NextResponse.json(
+        { error: "Invalid account credentials", isKnownError: true },
+        { status: 403 },
+      );
+    }
+
+    // Create a new request with email account info
+    const emailAccountReq = req.clone() as RequestWithEmailAccount;
+    emailAccountReq.auth = {
+      userId: headerUserId,
+      emailAccountId: headerEmailAccountId,
+      email
+    };
+    return emailAccountReq;
   }
 
   // Fall back to regular NextAuth session-based authentication

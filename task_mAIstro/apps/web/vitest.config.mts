@@ -12,6 +12,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "next/server": path.resolve(__dirname, "./tests/mocks/next-server.ts"),
+      // Route prisma util to a test mock to avoid DB access in unit tests
+      "@/utils/prisma": path.resolve(__dirname, "./utils/__mocks__/prisma.ts"),
     },
   },
   test: {

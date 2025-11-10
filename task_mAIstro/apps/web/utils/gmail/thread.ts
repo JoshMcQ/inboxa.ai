@@ -69,6 +69,7 @@ export async function getThreadsWithNextPageToken({
   return {
     threads: threads.data.threads || [],
     nextPageToken: threads.data.nextPageToken,
+    resultSizeEstimate: threads.data.resultSizeEstimate || 0,
   };
 }
 

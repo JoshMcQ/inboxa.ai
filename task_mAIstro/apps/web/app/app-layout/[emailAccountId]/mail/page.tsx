@@ -10,22 +10,16 @@ import type { ThreadsResponse } from "@/app/api/google/threads/controller";
 import { refetchEmailListAtom } from "@/store/email";
 import { ClientOnly } from "@/components/ClientOnly";
 import { PermissionsCheck } from "@/app/app-layout/[emailAccountId]/PermissionsCheck";
-import { cn } from "@/utils";
 import {
-  Bot,
-  Clock,
   Mail as MailIcon,
   Search,
   Radio,
   RefreshCw,
-  SparklesIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { prefixPath } from "@/utils/path";
 
 // No demo data - using real Gmail threads only
 
@@ -161,68 +155,17 @@ function VoiceNativeMailInterface({
   const params = useParams();
   const emailAccountId = params?.emailAccountId as string;
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSummaries, setShowSummaries] = useState(false);
-  const [summaries, setSummaries] = useState<string[]>([]);
-  const [summarizing, setSummarizing] = useState(false);
-
-  const generateAISummaries = async () => {
-    if (!allThreads || allThreads.length === 0) return;
-
-    setSummarizing(true);
-    try {
-      // Take the first 5 threads for summarization to avoid too many API calls
-      const threadsToSummarize = allThreads.slice(0, 5);
-      const summaryPromises = threadsToSummarize.map(async (thread) => {
-        const response = await fetch('/api/ai/summarise', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            textPlain: thread.snippet || '',
-            textHtml: thread.snippet || '',
-          }),
-        });
-
-        if (response.ok) {
-          return await response.text();
-        }
-        return `Summary unavailable for: ${thread.snippet?.slice(0, 50)}...`;
-      });
-
-      const results = await Promise.all(summaryPromises);
-      setSummaries(results);
-      setShowSummaries(true);
-    } catch (error) {
-      console.error('Error generating summaries:', error);
-    } finally {
-      setSummarizing(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto">
         {/* Voice-Native Header */}
         <div className="bg-background border-b border-border p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Radio size={32} className="text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Mail</h1>
-                <p className="text-muted-foreground">AI-powered email conversations</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <Link
-                  href={prefixPath(emailAccountId, "/summaries")}
-                  className="flex items-center gap-2"
-                >
-                  <SparklesIcon size={16} />
-                  AI Summaries
-                </Link>
-              </Button>
+          <div className="flex items-center gap-3 mb-6">
+            <Radio size={32} className="text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Mail</h1>
+              <p className="text-muted-foreground">AI-powered email conversations</p>
             </div>
           </div>
 
@@ -240,34 +183,6 @@ function VoiceNativeMailInterface({
             </div>
           </div>
         </div>
-
-        {/* AI Summaries Panel */}
-        {showSummaries && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">AI Email Summaries</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSummaries(false)}
-              >
-                ×
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {summaries.map((summary, index) => (
-                <Card key={index} className="p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">
-                    Email {index + 1}
-                  </div>
-                  <div className="text-sm text-foreground">
-                    {summary}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Email List View */}
         <div className="p-6">
