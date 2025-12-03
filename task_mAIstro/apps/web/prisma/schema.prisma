@@ -135,15 +135,15 @@ model EmailAccount {
   coldEmails     ColdEmail[]
   groups         Group[]
   categories     Category[]
-  threadTrackers ThreadTracker[]
-  cleanupJobs    CleanupJob[]
-  cleanupThreads CleanupThread[]
-  emailMessages  EmailMessage[]
-  emailTokens    EmailToken[]
-  knowledge      Knowledge[]
-  chats          Chat[]
-  digests        Digest[]
-  plannerTasks   PlannerTask[]
+  threadTrackers        ThreadTracker[]
+  cleanupJobs           CleanupJob[]
+  cleanupThreads        CleanupThread[]
+  emailCategorizations  EmailCategorization[]
+  emailTokens           EmailToken[]
+  knowledge             Knowledge[]
+  chats                 Chat[]
+  digests               Digest[]
+  plannerTasks          PlannerTask[]
 
   @@index([lastSummaryEmailAt])
   @@index([lastSummaryCheckAt])
@@ -523,29 +523,34 @@ model ColdEmail {
   @@index([emailAccountId, createdAt])
 }
 
-model EmailMessage {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  threadId        String
-  messageId       String
-  date            DateTime // date of the email
-  from            String
-  fromDomain      String
-  to              String
-  unsubscribeLink String?
-  read            Boolean
-  sent            Boolean
-  draft           Boolean
-  inbox           Boolean
+// Lightweight email categorization cache
+// Stores ONLY categorization metadata, not full email content
+// Full email data is queried from Gmail API in real-time
+model EmailCategorization {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Gmail identifiers
+  messageId String
+  threadId  String
+
+  // Minimal metadata for filtering
+  date DateTime // for date-based queries
+
+  // AI Categorization (the only data we cache)
+  priority  String? // urgent, important, normal, low
+  category  String? // urgent, important, newsletters, team, other
+  reasoning String? // AI explanation of why this priority/category
 
   emailAccountId String
   emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 
-  @@unique([emailAccountId, threadId, messageId])
+  @@unique([emailAccountId, messageId])
   @@index([emailAccountId, threadId])
   @@index([emailAccountId, date])
-  @@index([emailAccountId, from])
+  @@index([emailAccountId, priority])
+  @@index([emailAccountId, date, priority])
 }
 
 model ThreadTracker {

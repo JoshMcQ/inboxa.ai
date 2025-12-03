@@ -34,22 +34,25 @@ export function parseNaturalLanguageQuery(query: string, timezone?: number): str
   lastWeek.setDate(lastWeek.getDate() - 7);
   const lastWeekStr = `${lastWeek.getFullYear()}/${String(lastWeek.getMonth() + 1).padStart(2, "0")}/${String(lastWeek.getDate()).padStart(2, "0")}`;
 
-  // Check for common patterns
+  // Simple date parsing only - NO complex operator extraction
+  // Sender filtering should use the fromEmail parameter, not query string parsing
+  let dateFilter = '';
+
   if (lowerQuery === "today" || lowerQuery.includes("today")) {
-    return `after:${todayStr}`;
-  }
-
-  if (lowerQuery === "yesterday" || lowerQuery.includes("yesterday")) {
-    return `after:${yesterdayStr}`;
-  }
-
-  if (lowerQuery.includes("this week") || lowerQuery.includes("last 7 days")) {
-    return `after:${lastWeekStr}`;
-  }
-
-  if (lowerQuery.includes("this month")) {
+    dateFilter = `after:${todayStr}`;
+  } else if (lowerQuery === "yesterday" || lowerQuery.includes("yesterday")) {
+    dateFilter = `after:${yesterdayStr}`;
+  } else if (lowerQuery.includes("this week") || lowerQuery.includes("last 7 days")) {
+    dateFilter = `after:${lastWeekStr}`;
+  } else if (lowerQuery.includes("this month")) {
     const firstOfMonth = `${yyyy}/${mm}/01`;
-    return `after:${firstOfMonth}`;
+    dateFilter = `after:${firstOfMonth}`;
+  }
+
+  // If we found a date filter, return it with in:inbox category:primary
+  // category:primary filters to Primary tab only (excludes Promotions, Social, Updates, Forums)
+  if (dateFilter) {
+    return `${dateFilter} in:inbox category:primary`;
   }
 
   // If it already looks like a Gmail query, return as-is
@@ -62,6 +65,6 @@ export function parseNaturalLanguageQuery(query: string, timezone?: number): str
     return query;
   }
 
-  // Default: return as-is, let Gmail handle it
-  return query;
+  // Default: search in inbox Primary tab only
+  return `in:inbox category:primary`;
 }

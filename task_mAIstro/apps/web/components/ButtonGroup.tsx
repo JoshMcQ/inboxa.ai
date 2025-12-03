@@ -13,13 +13,13 @@ export function ButtonGroup(props: {
 }) {
   return (
     <span
-      className={cn("isolate inline-flex rounded-md bg-background", {
+      className={cn("isolate inline-flex rounded-md", {
         shadow: props.shadow,
       })}
     >
       {props.buttons.map((button) => (
         <Tooltip key={button.text || button.tooltip} content={button.tooltip}>
-          <Button onClick={button.onClick} size="icon" variant="ghost">
+          <Button onClick={button.onClick} size="icon" variant="outline">
             {button.icon}
             {button.text}
           </Button>

@@ -29,32 +29,60 @@ export async function getThreads({
   if (!accessToken) throw new SafeError("Missing access token");
 
   function getQuery() {
+    let baseQuery = '';
+
+    // Start with type-based filter using query operators (more accurate than labelIds)
+    if (query.type === "inbox" || !query.type || query.type === "undefined" || query.type === "null") {
+      // Filter to Primary tab only (excludes Promotions, Social, Updates, Forums)
+      baseQuery = "in:inbox category:primary";
+    } else if (query.type === "sent") {
+      baseQuery = "in:sent";
+    } else if (query.type === "draft") {
+      baseQuery = "in:draft";
+    } else if (query.type === "trash") {
+      baseQuery = "in:trash";
+    } else if (query.type === "spam") {
+      baseQuery = "in:spam";
+    } else if (query.type === "starred") {
+      baseQuery = "is:starred";
+    } else if (query.type === "important") {
+      baseQuery = "is:important";
+    } else if (query.type === "unread") {
+      baseQuery = "is:unread";
+    } else if (query.type === "archive") {
+      baseQuery = `-in:inbox -in:trash -in:spam`;
+    } else if (query.type === "all") {
+      baseQuery = ""; // Search everything
+    }
+
+    // Override with custom query if provided
     if (query.q) {
       return query.q;
     }
+
+    // Add sender filter if provided
     if (query.fromEmail) {
-      return `from:${query.fromEmail}`;
+      return baseQuery ? `${baseQuery} from:${query.fromEmail}` : `from:${query.fromEmail}`;
     }
-    if (query.type === "archive") {
-      return `-label:${GmailLabel.INBOX}`;
-    }
-    return undefined;
+
+    return baseQuery || "in:inbox";
   }
 
   const { threads: gmailThreads, nextPageToken } =
     await getThreadsWithNextPageToken({
       gmail,
       q: getQuery(),
-      labelIds: query.labelId ? [query.labelId] : getLabelIds(query.type),
+      labelIds: query.labelId ? [query.labelId] : undefined, // Only use labelIds for custom labels
       maxResults: query.limit || 50,
       pageToken: query.nextPageToken || undefined,
     });
 
   const threadIds = gmailThreads?.map((t) => t.id).filter(isDefined) || [];
   
+  const finalQuery = getQuery();
   console.log('Gmail API Debug:', {
-    query: getQuery(),
-    labelIds: query.labelId ? [query.labelId] : getLabelIds(query.type),
+    query: finalQuery,
+    labelIds: query.labelId ? [query.labelId] : undefined,
     gmailThreadsCount: gmailThreads?.length || 0,
     threadIds: threadIds.length,
     type: query.type

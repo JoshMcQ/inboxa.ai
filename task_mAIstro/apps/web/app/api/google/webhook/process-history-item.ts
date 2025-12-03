@@ -25,6 +25,8 @@ import type { ParsedMessage } from "@/utils/types";
 import type { EmailAccountWithAI } from "@/utils/llms/types";
 import { formatError } from "@/utils/error";
 import { enqueueDigestItem } from "@/utils/digest/index";
+import { categorizeWithRules } from "@/utils/ai/categorize/rule-based";
+import { extractDomainFromEmail } from "@/utils/email";
 
 export async function processHistoryItem(
   {
@@ -120,6 +122,14 @@ export async function processHistoryItem(
       await handleOutbound(emailAccount, parsedMessage, gmail);
       return;
     }
+
+    // Cache categorization metadata (not full email)
+    await cacheEmailCategorization({
+      messageId,
+      threadId,
+      parsedMessage,
+      emailAccountId,
+    });
 
     // check if unsubscribed
     const blocked = await blockUnsubscribedEmails({
@@ -281,4 +291,87 @@ export function shouldRunColdEmailBlocker(
       coldEmailBlocker === ColdEmailSetting.LABEL) &&
     hasAiAccess
   );
+}
+
+/**
+ * Cache categorization metadata only (not full email content)
+ * Full email data is queried from Gmail API in real-time
+ */
+async function cacheEmailCategorization({
+  messageId,
+  threadId,
+  parsedMessage,
+  emailAccountId,
+}: {
+  messageId: string;
+  threadId: string;
+  parsedMessage: ParsedMessage;
+  emailAccountId: string;
+}) {
+  const subject = parsedMessage.headers.subject || "(No subject)";
+  const snippet = parsedMessage.snippet || "";
+  const date = internalDateToDate(parsedMessage.internalDate);
+
+  if (!date) {
+    logger.warn("No date for email, skipping categorization cache", {
+      messageId,
+      threadId,
+    });
+    return;
+  }
+
+  // Apply rule-based categorization (free & instant)
+  const categorization = categorizeWithRules({
+    from: parsedMessage.headers.from,
+    subject,
+    snippet,
+  });
+
+  const isRuleBased = categorization.method === "rule-based";
+
+  // ALWAYS cache the email, even if it doesn't match rules
+  // Emails without rule-based matches will have null priority/category
+  // These will be picked up by the cron job for AI categorization
+  try {
+    await prisma.emailCategorization.upsert({
+      where: {
+        emailAccountId_messageId: {
+          emailAccountId,
+          messageId,
+        },
+      },
+      create: {
+        messageId,
+        threadId,
+        date,
+        priority: categorization.priority, // null if needs AI
+        category: categorization.category, // null if needs AI
+        reasoning: categorization.reasoning, // null if needs AI
+        emailAccountId,
+      },
+      update: {
+        priority: categorization.priority,
+        category: categorization.category,
+        reasoning: categorization.reasoning,
+      },
+    });
+
+    if (isRuleBased) {
+      logger.info(`Cached rule-based categorization: ${categorization.priority}/${categorization.category}`, {
+        messageId,
+        threadId,
+      });
+    } else {
+      logger.info("Cached uncategorized email for AI processing", {
+        messageId,
+        threadId,
+      });
+    }
+  } catch (error) {
+    logger.error("Failed to cache categorization", {
+      messageId,
+      threadId,
+      error: formatError(error),
+    });
+  }
 }

@@ -9,7 +9,14 @@ declare global {
 // Create the Prisma client with extensions, but cast it back to PrismaClient for type compatibility
 const _prisma =
   global.prisma ||
-  (new PrismaClient().$extends(encryptedTokens) as unknown as PrismaClient);
+  (new PrismaClient({
+    log: env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasources: {
+      db: {
+        url: env.DATABASE_URL,
+      },
+    },
+  }).$extends(encryptedTokens) as unknown as PrismaClient);
 
 if (env.NODE_ENV === "development") global.prisma = _prisma;
 
