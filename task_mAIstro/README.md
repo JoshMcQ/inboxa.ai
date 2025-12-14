@@ -24,7 +24,7 @@ InboxA.ai is a unified AI personal assistant that revolutionizes how you interac
 3. **Multi-Memory System** - Remembers your personal context, preferences, and communication style
 4. **Predictive Email Actions** - AI suggests and automates email operations based on your patterns
 
-Built on LangGraph with comprehensive Gmail integration and ElevenLabs voice synthesis.
+Built with comprehensive Gmail integration and ElevenLabs voice synthesis.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Finboxaai%2Finboxa-ai&env=NEXTAUTH_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_ENCRYPT_SECRET,GOOGLE_ENCRYPT_SALT,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,GOOGLE_PUBSUB_TOPIC_NAME,DATABASE_URL,OPENAI_API_KEY,ELEVENLABS_API_KEY)
 
@@ -75,7 +75,6 @@ Learn more in our [docs](https://docs.inboxa.ai).
 - [Prisma](https://www.prisma.io/)
 - [Upstash](https://upstash.com/)
 - [Turborepo](https://turbo.build/)
-- [LangGraph](https://github.com/langchain-ai/langgraph)
 - [ElevenLabs](https://elevenlabs.io/)
 
 ## Star History
@@ -98,7 +97,6 @@ We offer a hosted version of InboxA.ai at [https://inboxa.ai](https://inboxa.ai)
 
 - [Node.js](https://nodejs.org/en/) >= 18.0.0
 - [pnpm](https://pnpm.io/) >= 8.6.12
-- [Python](https://python.org/) >= 3.8 (for voice assistant)
 - [Docker desktop](https://www.docker.com/products/docker-desktop/) (recommended but optional)
 
 Make sure you have the above installed before starting.
@@ -132,7 +130,7 @@ Secrets:
 
 AI Services:
 
-- `OPENAI_API_KEY` -- OpenAI API key for LangGraph agent
+- `OPENAI_API_KEY` -- OpenAI API key for AI functionality
 - `ELEVENLABS_API_KEY` -- ElevenLabs API key for voice synthesis
 
 Redis:
@@ -142,9 +140,7 @@ Redis:
 
 When using Vercel with Fluid Compute turned off, you should set `MAX_DURATION=300` or lower. See Vercel limits for different plans [here](https://vercel.com/docs/functions/configuring-functions/duration#duration-limits).
 
-### Voice Assistant Setup
-
-#### ElevenLabs Integration
+### ElevenLabs Integration
 
 For voice output, you'll need an ElevenLabs API key:
 
@@ -155,18 +151,6 @@ For voice output, you'll need an ElevenLabs API key:
 ```bash
 ELEVENLABS_API_KEY=your_api_key_here
 ```
-
-#### Task mAIstro Server
-
-The voice assistant runs on a separate Python server using LangGraph:
-
-```bash
-cd task_mAIstro
-pip install -r requirements.txt
-python server.py
-```
-
-This starts the LangGraph agent with Gmail tools and memory management on port 2024.
 
 ### Updating .env file with Google OAuth credentials:
 
@@ -265,13 +249,6 @@ To run the migrations:
 
 ```bash
 pnpm prisma migrate dev
-```
-
-To start the voice assistant server:
-
-```bash
-cd task_mAIstro
-python server.py
 ```
 
 To run the web app locally for development (slower):

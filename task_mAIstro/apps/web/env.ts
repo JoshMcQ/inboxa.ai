@@ -70,10 +70,10 @@ export const env = createEnv({
     // Stripe
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  // ElevenLabs voice webhook (optional)
-  ELEVENLABS_WEBHOOK_SECRET: z.string().optional(), // HMAC secret to verify incoming ElevenLabs webhook events
-  ELEVENLABS_WEBHOOK_URL: z.string().optional(), // Public https URL (ngrok) registered in ElevenLabs dashboard
-  ELEVENLABS_AGENT_ID: z.string().optional(), // If you want to configure agent-id dynamically instead of hardcoding in widget
+    // ElevenLabs voice webhook (optional)
+    ELEVENLABS_WEBHOOK_SECRET: z.string().optional(), // HMAC secret to verify incoming ElevenLabs webhook events
+    ELEVENLABS_WEBHOOK_URL: z.string().optional(), // Public https URL (ngrok) registered in ElevenLabs dashboard
+    ELEVENLABS_AGENT_ID: z.string().optional(), // If you want to configure agent-id dynamically instead of hardcoding in widget
     TINYBIRD_TOKEN: z.string().optional(),
     TINYBIRD_BASE_URL: z.string().default("https://api.us-east.tinybird.co/"),
     TINYBIRD_ENCRYPT_SECRET: z.string().optional(),
@@ -109,9 +109,6 @@ export const env = createEnv({
     LICENSE_25_SEAT_VARIANT_ID: z.coerce.number().optional(),
 
     DUB_API_KEY: z.string().optional(),
-    // Voice agent (LangGraph)
-    LANGGRAPH_URL: z.string().optional(),
-    GRAPH_NAME: z.string().optional(),
     MOCK_VOICE: z.coerce.boolean().optional().default(false),
   },
   client: {
@@ -140,8 +137,6 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HERO_AB: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID: z.string().optional(),
     NEXT_PUBLIC_BASE_URL: z.string().default("https://inboxa.ai"),
-    NEXT_PUBLIC_LANGGRAPH_URL: z.string().optional(),
-    NEXT_PUBLIC_GRAPH_NAME: z.string().optional(),
     NEXT_PUBLIC_CONTACTS_ENABLED: z.coerce.boolean().optional().default(false),
     NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
     NEXT_PUBLIC_SUPPORT_EMAIL: z
@@ -204,8 +199,6 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SHOW_DEMO: process.env.NEXT_PUBLIC_SHOW_DEMO,
-    NEXT_PUBLIC_LANGGRAPH_URL: process.env.NEXT_PUBLIC_LANGGRAPH_URL,
-    NEXT_PUBLIC_GRAPH_NAME: process.env.NEXT_PUBLIC_GRAPH_NAME,
     NEXT_PUBLIC_CONTACTS_ENABLED: process.env.NEXT_PUBLIC_CONTACTS_ENABLED,
     NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS:
       process.env.NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS,
