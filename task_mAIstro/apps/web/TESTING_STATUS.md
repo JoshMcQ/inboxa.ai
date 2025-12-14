@@ -43,7 +43,7 @@
 - ✅ ngrok tunnel active: `https://ef790dc65abb.ngrok-free.app`
 
 ### 7. Cleanup
-- ✅ Deleted ALL Python LangGraph files (task_maistro.py, server.py, etc.)
+- ✅ Deleted ALL Python LangGraph files (inboxa.py, server.py, etc.)
 - ✅ Deleted nonsense markdown files (ARCHITECTURE.md, TESTING_GUIDE.md, etc.)
 - ✅ Deleted legacy voice components
 - ✅ Commented out unused voice-events code
