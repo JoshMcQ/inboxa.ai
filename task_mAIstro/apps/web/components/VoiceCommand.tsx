@@ -33,32 +33,40 @@ interface VoiceCommandProps {
   emailAccountId?: string;
 }
 
-export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceCommandProps) {
+export function VoiceCommand({
+  onResponse,
+  userId,
+  emailAccountId,
+}: VoiceCommandProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState("");
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Initialize speech recognition
   const initializeSpeechRecognition = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (
+      !("webkitSpeechRecognition" in window) &&
+      !("SpeechRecognition" in window)
+    ) {
       toast.error("Speech recognition not supported in this browser");
       return null;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    
+
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    recognition.lang = "en-US";
 
     recognition.onresult = (event) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
+      let finalTranscript = "";
+      let interimTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -73,7 +81,7 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error("Speech recognition error:", event.error);
       toast.error(`Speech recognition error: ${event.error}`);
       setIsRecording(false);
     };
@@ -92,7 +100,7 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
       if (!recognition) return;
 
       recognitionRef.current = recognition;
-      
+
       // Start speech recognition
       recognition.start();
       setIsRecording(true);
@@ -100,12 +108,14 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
 
       // Broadcast mic state → Listening
       try {
-        window.dispatchEvent(new CustomEvent("mic:state", { detail: "listening" }));
+        window.dispatchEvent(
+          new CustomEvent("mic:state", { detail: "listening" }),
+        );
       } catch {}
 
       toast.success("Voice recording started. Speak your command...");
     } catch (error) {
-      console.error('Error starting recording:', error);
+      console.error("Error starting recording:", error);
       toast.error("Failed to start voice recording");
     }
   }, [initializeSpeechRecognition]);
@@ -114,31 +124,31 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    
+
     setIsRecording(false);
-    
+
     if (!transcript.trim()) {
       toast.error("No speech detected. Please try again.");
       return;
     }
 
     setIsProcessing(true);
-    
+
     try {
       // Preflight: check assistant health for actionable messaging
       try {
-        const healthResp = await fetch('/api/voice', { method: 'GET' });
-        const healthJson = await healthResp.json().catch(() => ({} as any));
-        if (!healthResp.ok || healthJson?.status !== 'healthy') {
+        const healthResp = await fetch("/api/voice", { method: "GET" });
+        const healthJson = await healthResp.json().catch(() => ({}) as any);
+        if (!healthResp.ok || healthJson?.status !== "healthy") {
           toast.error(
-            `Assistant unavailable. Please ensure the voice service is running.`
+            `Assistant unavailable. Please ensure the voice service is running.`,
           );
           setIsProcessing(false);
           return;
         }
       } catch {
         toast.error(
-          'Assistant health check failed. Please ensure the voice service is running.'
+          "Assistant health check failed. Please ensure the voice service is running.",
         );
         setIsProcessing(false);
         return;
@@ -146,21 +156,25 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
 
       // Send transcript to voice API
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
-      
+
       // Include email account ID if provided for authentication
       if (emailAccountId) {
-        headers['X-Email-Account-ID'] = emailAccountId;
+        headers["X-Email-Account-ID"] = emailAccountId;
       } else {
-        console.error('Voice command missing emailAccountId - this will cause authentication errors');
-        toast.error('Voice commands require email account authentication. Please refresh and try again.');
+        console.error(
+          "Voice command missing emailAccountId - this will cause authentication errors",
+        );
+        toast.error(
+          "Voice commands require email account authentication. Please refresh and try again.",
+        );
         setIsProcessing(false);
         return;
       }
 
-      const response = await fetch('/api/voice', {
-        method: 'POST',
+      const response = await fetch("/api/voice", {
+        method: "POST",
         headers,
         body: JSON.stringify({
           message: transcript,
@@ -169,18 +183,20 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
       });
 
       if (!response.ok) {
-        let extra = '';
+        let extra = "";
         try {
           const j = await response.json();
           const bits = [
             j?.detail || j?.error,
-            j?.cause ? `cause: ${j.cause}` : '',
+            j?.cause ? `cause: ${j.cause}` : "",
           ].filter(Boolean);
-          extra = bits.join(' | ');
+          extra = bits.join(" | ");
         } catch {
           // ignore JSON parse errors
         }
-        toast.error(`API error ${response.status}${extra ? ` — ${extra}` : ''}`);
+        toast.error(
+          `API error ${response.status}${extra ? ` — ${extra}` : ""}`,
+        );
         setIsProcessing(false);
         return;
       }
@@ -197,16 +213,16 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         const chunk = decoder.decode(value, { stream: true });
         fullResponse += chunk;
       }
 
       // Parse the response (assuming it's JSON lines format)
-      const lines = fullResponse.split('\n').filter(line => line.trim());
+      const lines = fullResponse.split("\n").filter((line) => line.trim());
       let lastMessage = "";
       let audioBase64 = null;
-      
+
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
@@ -228,7 +244,7 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
       if (lastMessage) {
         toast.success("Voice command processed successfully!");
         onResponse?.(lastMessage);
-        
+
         // Play ElevenLabs audio if available, otherwise use browser speech synthesis
         if (audioBase64) {
           try {
@@ -238,18 +254,18 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
             for (let i = 0; i < audioData.length; i++) {
               audioArray[i] = audioData.charCodeAt(i);
             }
-            const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+            const audioBlob = new Blob([audioArray], { type: "audio/mpeg" });
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
-            
+
             audio.onended = () => {
               URL.revokeObjectURL(audioUrl);
             };
-            
-            audio.play().catch(e => {
-              console.error('Failed to play ElevenLabs audio:', e);
+
+            audio.play().catch((e) => {
+              console.error("Failed to play ElevenLabs audio:", e);
               // Fallback to browser speech synthesis
-              if ('speechSynthesis' in window) {
+              if ("speechSynthesis" in window) {
                 const utterance = new SpeechSynthesisUtterance(lastMessage);
                 utterance.rate = 0.8;
                 utterance.pitch = 1;
@@ -257,9 +273,9 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
               }
             });
           } catch (e) {
-            console.error('Failed to process ElevenLabs audio:', e);
+            console.error("Failed to process ElevenLabs audio:", e);
             // Fallback to browser speech synthesis
-            if ('speechSynthesis' in window) {
+            if ("speechSynthesis" in window) {
               const utterance = new SpeechSynthesisUtterance(lastMessage);
               utterance.rate = 0.8;
               utterance.pitch = 1;
@@ -268,7 +284,7 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
           }
         } else {
           // Fallback to browser speech synthesis
-          if ('speechSynthesis' in window) {
+          if ("speechSynthesis" in window) {
             const utterance = new SpeechSynthesisUtterance(lastMessage);
             utterance.rate = 0.8;
             utterance.pitch = 1;
@@ -278,9 +294,8 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
       } else {
         toast.error("No response received from the assistant");
       }
-
     } catch (error) {
-      console.error('Error processing voice command:', error);
+      console.error("Error processing voice command:", error);
       toast.error("Failed to process voice command");
     } finally {
       setIsProcessing(false);

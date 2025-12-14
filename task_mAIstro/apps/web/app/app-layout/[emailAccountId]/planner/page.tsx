@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/utils";
 import type { TaskEventData, EmailEventData } from "@/types/events";
-import { 
+import {
   ClockIcon,
   CheckCircleIcon,
   AlertCircleIcon,
@@ -14,7 +14,7 @@ import {
   ChevronRightIcon,
   ExternalLinkIcon,
   PlayIcon,
-  PauseIcon
+  PauseIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActivityTimeline, useEventStore } from "@/components/ActivityTimeline";
@@ -23,14 +23,14 @@ import { StatusDock, useStatusDock } from "@/components/StatusDock";
 interface PlannerTask {
   id: string;
   title: string;
-  type: 'follow-up' | 'waiting-on' | 'scheduled-send' | 'meeting' | 'reconcile';
-  priority: 'high' | 'medium' | 'low';
+  type: "follow-up" | "waiting-on" | "scheduled-send" | "meeting" | "reconcile";
+  priority: "high" | "medium" | "low";
   dueDate: Date;
   linkedEmailId?: string;
   linkedThreadSubject?: string;
   createdBy: string; // "Rule R-12", "Manual", etc.
   createdAt: Date;
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+  status: "pending" | "in-progress" | "completed" | "cancelled";
   estimatedDuration?: number; // minutes
   assignee?: string;
 }
@@ -46,48 +46,48 @@ interface CalendarEvent {
   title: string;
   startTime: Date;
   endTime: Date;
-  type: 'meeting' | 'focus' | 'break';
+  type: "meeting" | "focus" | "break";
 }
 
 const MOCK_TASKS: PlannerTask[] = [
   {
-    id: '1',
-    title: 'Follow up: Sarah about Q4 budget approval',
-    type: 'follow-up',
-    priority: 'high',
+    id: "1",
+    title: "Follow up: Sarah about Q4 budget approval",
+    type: "follow-up",
+    priority: "high",
     dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-    linkedEmailId: 'email-123',
-    linkedThreadSubject: 'Q4 Budget Planning Discussion',
-    createdBy: 'Auto-rule R-12',
+    linkedEmailId: "email-123",
+    linkedThreadSubject: "Q4 Budget Planning Discussion",
+    createdBy: "Auto-rule R-12",
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    status: 'pending',
+    status: "pending",
     estimatedDuration: 15,
-    assignee: 'Joshua'
+    assignee: "Joshua",
   },
   {
-    id: '2',
-    title: 'Waiting on: Invoice approval from Finance',
-    type: 'waiting-on',
-    priority: 'medium',
+    id: "2",
+    title: "Waiting on: Invoice approval from Finance",
+    type: "waiting-on",
+    priority: "medium",
     dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000),
-    linkedEmailId: 'email-456',
-    linkedThreadSubject: 'Invoice #INV-2024-001 - Approval Required',
-    createdBy: 'Manual',
+    linkedEmailId: "email-456",
+    linkedThreadSubject: "Invoice #INV-2024-001 - Approval Required",
+    createdBy: "Manual",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    status: 'pending',
+    status: "pending",
     estimatedDuration: 5,
   },
   {
-    id: '3',
-    title: 'Send: Weekly report to team',
-    type: 'scheduled-send',
-    priority: 'medium',
+    id: "3",
+    title: "Send: Weekly report to team",
+    type: "scheduled-send",
+    priority: "medium",
     dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000),
-    createdBy: 'Scheduled rule R-08',
+    createdBy: "Scheduled rule R-08",
     createdAt: new Date(Date.now() - 30 * 60 * 1000),
-    status: 'pending',
+    status: "pending",
     estimatedDuration: 30,
-  }
+  },
 ];
 
 export default function PlannerPage() {
@@ -106,7 +106,7 @@ export default function PlannerPage() {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/tasks');
+      const response = await fetch("/api/tasks");
       if (!response.ok) {
         // Fallback to mock data if backend not available
         setTasks(MOCK_TASKS);
@@ -121,7 +121,10 @@ export default function PlannerPage() {
       }));
       setTasks(tasksWithDates);
     } catch (error) {
-      console.warn('Failed to load tasks from backend, using mock data:', error);
+      console.warn(
+        "Failed to load tasks from backend, using mock data:",
+        error,
+      );
       setTasks(MOCK_TASKS);
     } finally {
       setLoading(false);
@@ -131,11 +134,11 @@ export default function PlannerPage() {
   // Generate time slots for today (6 AM to 10 PM)
   const timeSlots: TimeSlot[] = Array.from({ length: 16 }, (_, i) => {
     const hour = i + 6;
-    const slotTasks = tasks.filter(task => {
+    const slotTasks = tasks.filter((task) => {
       const taskHour = task.dueDate.getHours();
       return taskHour === hour;
     });
-    
+
     return {
       hour,
       tasks: slotTasks,
@@ -144,68 +147,72 @@ export default function PlannerPage() {
   });
 
   const handleCompleteTask = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
     try {
       // Call backend to complete task
       const response = await fetch(`/api/tasks/${taskId}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
 
       if (response.ok) {
         // Add event to timeline
         addEvent({
-          type: 'task.completed',
+          type: "task.completed",
           humanString: `Completed: ${task.title}`,
           undoable: true,
           taskId,
           title: task.title,
           linkedEmailId: task.linkedEmailId,
-        } as Omit<TaskEventData, 'id' | 'timestamp'>);
+        } as Omit<TaskEventData, "id" | "timestamp">);
 
         // Update task status locally
-        setTasks(prev => prev.map(t => 
-          t.id === taskId ? { ...t, status: 'completed' as const } : t
-        ));
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === taskId ? { ...t, status: "completed" as const } : t,
+          ),
+        );
       } else {
-        console.warn('Failed to complete task on backend');
+        console.warn("Failed to complete task on backend");
       }
     } catch (error) {
-      console.warn('Error completing task:', error);
+      console.warn("Error completing task:", error);
       // Still update locally if backend fails
-      setTasks(prev => prev.map(t => 
-        t.id === taskId ? { ...t, status: 'completed' as const } : t
-      ));
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, status: "completed" as const } : t,
+        ),
+      );
     }
   };
 
   const handleCreateFollowUp = async () => {
     addEvent({
-      type: 'email.searched',
-      humanString: 'Searching for emails that need follow-up...',
+      type: "email.searched",
+      humanString: "Searching for emails that need follow-up...",
       undoable: false,
-      query: 'outbound emails asking questions',
-    } as Omit<EmailEventData, 'id' | 'timestamp'>);
+      query: "outbound emails asking questions",
+    } as Omit<EmailEventData, "id" | "timestamp">);
 
     // Note: LangGraph integration removed. Using mock behavior.
     setTimeout(() => {
       addEvent({
-        type: 'task.created',
-        humanString: 'Created 3 follow-up tasks from recent emails',
+        type: "task.created",
+        humanString: "Created 3 follow-up tasks from recent emails",
         undoable: true,
-        taskId: 'new-task-batch',
-        title: 'Follow-up task batch',
-      } as Omit<TaskEventData, 'id' | 'timestamp'>);
+        taskId: "new-task-batch",
+        title: "Follow-up task batch",
+      } as Omit<TaskEventData, "id" | "timestamp">);
     }, 1500);
   };
 
   return (
     <div className="flex h-screen bg-background">
       {/* Activity Timeline */}
-      <ActivityTimeline 
-        events={events} 
+      <ActivityTimeline
+        events={events}
         onUndo={undoEvent}
         className="flex-shrink-0"
       />
@@ -219,17 +226,17 @@ export default function PlannerPage() {
               Today's Timeline
             </h2>
             <p className="text-sm text-muted-foreground">
-              {new Intl.DateTimeFormat('en-US', { 
-                weekday: 'long', 
-                month: 'long', 
-                day: 'numeric' 
+              {new Intl.DateTimeFormat("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
               }).format(currentTime)}
             </p>
           </div>
-          
+
           <div className="flex-1 overflow-auto p-4 space-y-2">
             {timeSlots.map((slot) => (
-              <TimeSlotCard 
+              <TimeSlotCard
                 key={slot.hour}
                 slot={slot}
                 currentHour={currentTime.getHours()}
@@ -243,10 +250,12 @@ export default function PlannerPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border bg-card">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-card-foreground">Planner</h1>
+              <h1 className="text-2xl font-bold text-card-foreground">
+                Planner
+              </h1>
               <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={handleCreateFollowUp}
                   className="bg-teal text-teal-foreground hover:bg-teal/90"
                 >
@@ -256,7 +265,8 @@ export default function PlannerPage() {
               </div>
             </div>
             <p className="text-muted-foreground mt-1">
-              Auto-updated by email events • {tasks.filter(t => t.status === 'pending').length} pending tasks
+              Auto-updated by email events •{" "}
+              {tasks.filter((t) => t.status === "pending").length} pending tasks
             </p>
           </div>
 
@@ -266,7 +276,7 @@ export default function PlannerPage() {
               <TaskList
                 title="Follow-ups"
                 icon={MailIcon}
-                tasks={tasks.filter(t => t.type === 'follow-up')}
+                tasks={tasks.filter((t) => t.type === "follow-up")}
                 color="text-teal-600"
                 onTaskClick={setSelectedTask}
                 onTaskComplete={handleCompleteTask}
@@ -276,7 +286,7 @@ export default function PlannerPage() {
               <TaskList
                 title="Waiting On"
                 icon={ClockIcon}
-                tasks={tasks.filter(t => t.type === 'waiting-on')}
+                tasks={tasks.filter((t) => t.type === "waiting-on")}
                 color="text-yellow-600"
                 onTaskClick={setSelectedTask}
                 onTaskComplete={handleCompleteTask}
@@ -286,7 +296,7 @@ export default function PlannerPage() {
               <TaskList
                 title="Scheduled Sends"
                 icon={PlayIcon}
-                tasks={tasks.filter(t => t.type === 'scheduled-send')}
+                tasks={tasks.filter((t) => t.type === "scheduled-send")}
                 color="text-indigo-600"
                 onTaskClick={setSelectedTask}
                 onTaskComplete={handleCompleteTask}
@@ -296,7 +306,7 @@ export default function PlannerPage() {
               <TaskList
                 title="Meetings"
                 icon={UserIcon}
-                tasks={tasks.filter(t => t.type === 'meeting')}
+                tasks={tasks.filter((t) => t.type === "meeting")}
                 color="text-purple-600"
                 onTaskClick={setSelectedTask}
                 onTaskComplete={handleCompleteTask}
@@ -308,8 +318,8 @@ export default function PlannerPage() {
         {/* Right: Detail Panel */}
         {selectedTask && (
           <div className="w-96 border-l border-border bg-card flex flex-col">
-            <TaskDetailPanel 
-              task={selectedTask} 
+            <TaskDetailPanel
+              task={selectedTask}
               onClose={() => setSelectedTask(null)}
               onComplete={() => handleCompleteTask(selectedTask.id)}
             />
@@ -318,10 +328,7 @@ export default function PlannerPage() {
       </div>
 
       {/* Status Dock */}
-      <StatusDock 
-        jobs={jobs}
-        onUndo={undoJob}
-      />
+      <StatusDock jobs={jobs} onUndo={undoJob} />
     </div>
   );
 }
@@ -334,31 +341,34 @@ interface TimeSlotCardProps {
 
 function TimeSlotCard({ slot, currentHour, onTaskClick }: TimeSlotCardProps) {
   const isCurrentHour = slot.hour === currentHour;
-  const timeString = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    hour12: true
+  const timeString = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    hour12: true,
   }).format(new Date().setHours(slot.hour, 0, 0, 0));
 
   return (
-    <div className={cn(
-      "p-3 rounded-lg border transition-all",
-      isCurrentHour ? [
-        "bg-primary/10 border-primary/30",
-        "shadow-sm"
-      ] : "bg-card border-border hover:bg-accent/50"
-    )}>
+    <div
+      className={cn(
+        "p-3 rounded-lg border transition-all",
+        isCurrentHour
+          ? ["bg-primary/10 border-primary/30", "shadow-sm"]
+          : "bg-card border-border hover:bg-accent/50",
+      )}
+    >
       <div className="flex items-center gap-2 mb-2">
-        <span className={cn(
-          "text-sm font-medium",
-          isCurrentHour ? "text-primary" : "text-muted-foreground"
-        )}>
+        <span
+          className={cn(
+            "text-sm font-medium",
+            isCurrentHour ? "text-primary" : "text-muted-foreground",
+          )}
+        >
           {timeString}
         </span>
         {isCurrentHour && (
           <span className="size-2 bg-primary rounded-full animate-pulse" />
         )}
       </div>
-      
+
       {slot.tasks.length > 0 ? (
         <div className="space-y-1">
           {slot.tasks.map((task) => (
@@ -369,7 +379,9 @@ function TimeSlotCard({ slot, currentHour, onTaskClick }: TimeSlotCardProps) {
             >
               <div className="flex items-center gap-2">
                 <PriorityIndicator priority={task.priority} />
-                <span className="text-sm font-medium truncate">{task.title}</span>
+                <span className="text-sm font-medium truncate">
+                  {task.title}
+                </span>
               </div>
             </button>
           ))}
@@ -390,17 +402,26 @@ interface TaskListProps {
   onTaskComplete: (taskId: string) => void;
 }
 
-function TaskList({ title, icon: Icon, tasks, color, onTaskClick, onTaskComplete }: TaskListProps) {
-  const pendingTasks = tasks.filter(t => t.status === 'pending');
+function TaskList({
+  title,
+  icon: Icon,
+  tasks,
+  color,
+  onTaskClick,
+  onTaskComplete,
+}: TaskListProps) {
+  const pendingTasks = tasks.filter((t) => t.status === "pending");
 
   return (
     <div className="bg-card border border-border rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
         <Icon className={cn("size-5", color)} />
         <h3 className="font-semibold text-card-foreground">{title}</h3>
-        <span className="text-sm text-muted-foreground">({pendingTasks.length})</span>
+        <span className="text-sm text-muted-foreground">
+          ({pendingTasks.length})
+        </span>
       </div>
-      
+
       <div className="space-y-2">
         {pendingTasks.map((task) => (
           <div
@@ -416,14 +437,17 @@ function TaskList({ title, icon: Icon, tasks, color, onTaskClick, onTaskComplete
                     {task.title}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Due {new Intl.DateTimeFormat('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  }).format(task.dueDate)}</span>
-                  
+                  <span>
+                    Due{" "}
+                    {new Intl.DateTimeFormat("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).format(task.dueDate)}
+                  </span>
+
                   {task.estimatedDuration && (
                     <>
                       <span>•</span>
@@ -431,7 +455,7 @@ function TaskList({ title, icon: Icon, tasks, color, onTaskClick, onTaskComplete
                     </>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                   <span>Created by {task.createdBy}</span>
                   {task.linkedEmailId && (
@@ -439,7 +463,7 @@ function TaskList({ title, icon: Icon, tasks, color, onTaskClick, onTaskComplete
                   )}
                 </div>
               </div>
-              
+
               <Button
                 size="sm"
                 variant="ghost"
@@ -454,7 +478,7 @@ function TaskList({ title, icon: Icon, tasks, color, onTaskClick, onTaskComplete
             </div>
           </div>
         ))}
-        
+
         {pendingTasks.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <div className="size-12 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -485,22 +509,25 @@ function TaskDetailPanel({ task, onClose, onComplete }: TaskDetailPanelProps) {
           </Button>
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-auto p-4 space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <PriorityIndicator priority={task.priority} />
-            <span className="text-sm font-medium capitalize">{task.priority} priority</span>
+            <span className="text-sm font-medium capitalize">
+              {task.priority} priority
+            </span>
           </div>
-          
+
           <div className="text-sm text-muted-foreground">
-            Due {new Intl.DateTimeFormat('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
+            Due{" "}
+            {new Intl.DateTimeFormat("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
             }).format(task.dueDate)}
           </div>
         </div>
@@ -508,14 +535,16 @@ function TaskDetailPanel({ task, onClose, onComplete }: TaskDetailPanelProps) {
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-card-foreground">Context</h4>
           <div className="p-3 bg-accent/20 rounded-lg">
-            <p className="text-sm">Created by <strong>{task.createdBy}</strong></p>
+            <p className="text-sm">
+              Created by <strong>{task.createdBy}</strong>
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {new Intl.DateTimeFormat('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+              {new Intl.DateTimeFormat("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
               }).format(task.createdAt)}
             </p>
           </div>
@@ -523,13 +552,21 @@ function TaskDetailPanel({ task, onClose, onComplete }: TaskDetailPanelProps) {
 
         {task.linkedThreadSubject && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-card-foreground">Linked Email</h4>
+            <h4 className="text-sm font-medium text-card-foreground">
+              Linked Email
+            </h4>
             <div className="p-3 bg-accent/20 rounded-lg">
               <div className="flex items-center gap-2">
                 <MailIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{task.linkedThreadSubject}</span>
+                <span className="text-sm font-medium">
+                  {task.linkedThreadSubject}
+                </span>
               </div>
-              <Button size="sm" variant="ghost" className="mt-2 h-6 px-2 text-xs">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 h-6 px-2 text-xs"
+              >
                 <ExternalLinkIcon className="size-3 mr-1" />
                 Open thread
               </Button>
@@ -537,9 +574,9 @@ function TaskDetailPanel({ task, onClose, onComplete }: TaskDetailPanelProps) {
           </div>
         )}
       </div>
-      
+
       <div className="p-4 border-t border-border">
-        <Button 
+        <Button
           onClick={onComplete}
           className="w-full bg-teal text-teal-foreground hover:bg-teal/90"
         >
@@ -551,12 +588,14 @@ function TaskDetailPanel({ task, onClose, onComplete }: TaskDetailPanelProps) {
   );
 }
 
-function PriorityIndicator({ priority }: { priority: 'high' | 'medium' | 'low' }) {
+function PriorityIndicator({
+  priority,
+}: { priority: "high" | "medium" | "low" }) {
   const colors = {
-    high: 'bg-red-500',
-    medium: 'bg-yellow-500',
-    low: 'bg-green-500'
+    high: "bg-red-500",
+    medium: "bg-yellow-500",
+    low: "bg-green-500",
   };
-  
+
   return <div className={cn("size-2 rounded-full", colors[priority])} />;
 }

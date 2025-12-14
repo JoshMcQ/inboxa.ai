@@ -70,10 +70,10 @@ export const env = createEnv({
     // Stripe
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  // ElevenLabs voice webhook (optional)
-  ELEVENLABS_WEBHOOK_SECRET: z.string().optional(), // HMAC secret to verify incoming ElevenLabs webhook events
-  ELEVENLABS_WEBHOOK_URL: z.string().optional(), // Public https URL (ngrok) registered in ElevenLabs dashboard
-  ELEVENLABS_AGENT_ID: z.string().optional(), // If you want to configure agent-id dynamically instead of hardcoding in widget
+    // ElevenLabs voice webhook (optional)
+    ELEVENLABS_WEBHOOK_SECRET: z.string().optional(), // HMAC secret to verify incoming ElevenLabs webhook events
+    ELEVENLABS_WEBHOOK_URL: z.string().optional(), // Public https URL (ngrok) registered in ElevenLabs dashboard
+    ELEVENLABS_AGENT_ID: z.string().optional(), // If you want to configure agent-id dynamically instead of hardcoding in widget
     TINYBIRD_TOKEN: z.string().optional(),
     TINYBIRD_BASE_URL: z.string().default("https://api.us-east.tinybird.co/"),
     TINYBIRD_ENCRYPT_SECRET: z.string().optional(),
