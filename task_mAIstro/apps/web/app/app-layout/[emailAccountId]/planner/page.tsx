@@ -189,47 +189,16 @@ export default function PlannerPage() {
       query: 'outbound emails asking questions',
     } as Omit<EmailEventData, 'id' | 'timestamp'>);
 
-    try {
-      // Call LangGraph to analyze emails and create follow-up tasks
-      const response = await fetch('/api/internal/langgraph', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userMessage: 'Find emails that need follow-up and create tasks for them',
-          emailAccountId: window.location.pathname.split('/')[2],
-          userId: 'current-user-id', // This should come from auth context
-          conversationId: `followup-${Date.now()}`
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        addEvent({
-          type: 'task.created',
-          humanString: data.response || 'Created follow-up tasks from recent emails',
-          undoable: true,
-          taskId: 'new-task-batch',
-          title: 'Follow-up task batch',
-        } as Omit<TaskEventData, 'id' | 'timestamp'>);
-        
-        // Reload tasks to get new ones
-        loadTasks();
-      } else {
-        throw new Error('Failed to create follow-up tasks');
-      }
-    } catch (error) {
-      console.error('Error creating follow-up tasks:', error);
-      // Fallback to mock behavior
-      setTimeout(() => {
-        addEvent({
-          type: 'task.created',
-          humanString: 'Created 3 follow-up tasks from recent emails',
-          undoable: true,
-          taskId: 'new-task-batch',
-          title: 'Follow-up task batch',
-        } as Omit<TaskEventData, 'id' | 'timestamp'>);
-      }, 1500);
-    }
+    // Note: LangGraph integration removed. Using mock behavior.
+    setTimeout(() => {
+      addEvent({
+        type: 'task.created',
+        humanString: 'Created 3 follow-up tasks from recent emails',
+        undoable: true,
+        taskId: 'new-task-batch',
+        title: 'Follow-up task batch',
+      } as Omit<TaskEventData, 'id' | 'timestamp'>);
+    }, 1500);
   };
 
   return (

@@ -109,9 +109,6 @@ export const env = createEnv({
     LICENSE_25_SEAT_VARIANT_ID: z.coerce.number().optional(),
 
     DUB_API_KEY: z.string().optional(),
-    // Voice agent (LangGraph)
-    LANGGRAPH_URL: z.string().optional(),
-    GRAPH_NAME: z.string().optional(),
     MOCK_VOICE: z.coerce.boolean().optional().default(false),
   },
   client: {
@@ -140,8 +137,6 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_HERO_AB: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID: z.string().optional(),
     NEXT_PUBLIC_BASE_URL: z.string().default("https://inboxa.ai"),
-    NEXT_PUBLIC_LANGGRAPH_URL: z.string().optional(),
-    NEXT_PUBLIC_GRAPH_NAME: z.string().optional(),
     NEXT_PUBLIC_CONTACTS_ENABLED: z.coerce.boolean().optional().default(false),
     NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
     NEXT_PUBLIC_SUPPORT_EMAIL: z
@@ -204,8 +199,6 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_POSTHOG_ONBOARDING_SURVEY_ID,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SHOW_DEMO: process.env.NEXT_PUBLIC_SHOW_DEMO,
-    NEXT_PUBLIC_LANGGRAPH_URL: process.env.NEXT_PUBLIC_LANGGRAPH_URL,
-    NEXT_PUBLIC_GRAPH_NAME: process.env.NEXT_PUBLIC_GRAPH_NAME,
     NEXT_PUBLIC_CONTACTS_ENABLED: process.env.NEXT_PUBLIC_CONTACTS_ENABLED,
     NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS:
       process.env.NEXT_PUBLIC_FREE_UNSUBSCRIBE_CREDITS,

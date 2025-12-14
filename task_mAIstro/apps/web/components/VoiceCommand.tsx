@@ -130,16 +130,15 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
         const healthResp = await fetch('/api/voice', { method: 'GET' });
         const healthJson = await healthResp.json().catch(() => ({} as any));
         if (!healthResp.ok || healthJson?.status !== 'healthy') {
-          const url = healthJson?.langgraph_url ? ` (${healthJson.langgraph_url})` : '';
           toast.error(
-            `Assistant unavailable${url}. Set LANGGRAPH_URL and GRAPH_NAME, then start your LangGraph service.`
+            `Assistant unavailable. Please ensure the voice service is running.`
           );
           setIsProcessing(false);
           return;
         }
       } catch {
         toast.error(
-          'Assistant health check failed. Ensure your LangGraph service is running and LANGGRAPH_URL is set.'
+          'Assistant health check failed. Please ensure the voice service is running.'
         );
         setIsProcessing(false);
         return;
@@ -175,8 +174,6 @@ export function VoiceCommand({ onResponse, userId, emailAccountId }: VoiceComman
           const j = await response.json();
           const bits = [
             j?.detail || j?.error,
-            j?.langgraph_url ? `URL: ${j.langgraph_url}` : '',
-            j?.graph_name ? `graph: ${j.graph_name}` : '',
             j?.cause ? `cause: ${j.cause}` : '',
           ].filter(Boolean);
           extra = bits.join(' | ');
